@@ -1,0 +1,115 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+nextRoll = 1
+rollCount = 0
+def getNextRoll():
+    global rollCount, nextRoll
+    rollCount += 1
+    result = nextRoll
+    nextRoll = (nextRoll + 1) % 101
+    if (nextRoll == 0):
+        nextRoll = 1
+    return result
+
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+
+# Assuming always 2 players
+players = {1: {"position": 0, "score": 0}, 2: {"position": 0, "score": 0}}
+
+s = input[0].split(" ")
+players[int(s[1])]["position"] = int(s[4])
+
+s = input[1].split(" ")
+players[int(s[1])]["position"] = int(s[4])
+
+p(players)
+
+nextPlayer = 1
+while (True):
+    currentPosition = players[nextPlayer]["position"] 
+    d = [getNextRoll(), getNextRoll(), getNextRoll()]
+    newPosition = currentPosition + d[0] + d[1] + d[2]
+    newPosition = newPosition - (math.floor((newPosition - 1) / 10) * 10)
+
+    newScore = players[nextPlayer]["score"] + newPosition
+
+    players[nextPlayer]["position"] = newPosition
+    players[nextPlayer]["score"] = newScore
+
+    print(" - Player {} rolls {}+{}+{} and moves to space {} for a total score of {}".format(nextPlayer,d[0],d[1],d[2],newPosition,newScore))
+
+    if (players[nextPlayer]["score"] >= 1000):
+        winner = nextPlayer
+        loser = (nextPlayer % 2) + 1
+        break
+
+    nextPlayer = (nextPlayer % 2) + 1
+
+
+result = players[loser]["score"] * rollCount
+p(result)

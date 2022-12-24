@@ -1,0 +1,62 @@
+#!/usr/bin/python3
+import fileinput
+import json
+
+def readData():
+    vents = []
+
+    for line in fileinput.input():
+        ventLine = line.strip().split(" -> ")
+        ventLineStart = [int(i) for i in ventLine[0].split(',')]
+        ventLineEnd = [int(i) for i in ventLine[1].split(',')]
+        vents.append({'start': ventLineStart, 'end': ventLineEnd})
+
+    return vents
+
+ventCount = {}
+def markCoordinate(x,y):
+    key = str(x)+','+str(y)
+    if (key in ventCount):
+        ventCount[key] += 1
+    else:
+        ventCount[key] = 1
+
+def markLine(vent):
+    x1 = vent['start'][0]
+    y1 = vent['start'][1]
+    x2 = vent['end'][0]
+    y2 = vent['end'][1]
+
+    if (y1 == y2):
+        yStep = 0
+    elif (y1 < y2):
+        yStep = 1
+        steps = y2 - y1
+    else:
+        yStep = -1
+        steps = y1 - y2
+
+    if (x1 == x2):
+        xStep = 0
+    elif (x1 < x2):
+        xStep = 1
+        steps = x2 - x1
+    else:
+        xStep = -1
+        steps = x1 - x2
+
+    for i in range(steps + 1):
+        markCoordinate(x1 + (i * xStep), y1 + (i * yStep))
+       
+
+vents = readData()
+
+for vent in vents:
+    markLine(vent)
+
+count = 0
+for key in ventCount:
+    if (ventCount[key] > 1):
+        count += 1
+
+print(count)

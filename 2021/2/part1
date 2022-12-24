@@ -1,0 +1,23 @@
+#!/usr/bin/python3
+import fileinput
+
+position = 0
+depth = 0
+
+for line in fileinput.input():
+    inputs = line.split(' ')
+    command = inputs[0]
+    value = int(inputs[1])
+
+    if (command == 'forward'):
+        position += value
+    elif (command == 'down'):
+        depth += value
+    elif (command == 'up'):
+        depth -= value
+    else:
+        print("Error: " + line)
+
+print(position)
+print(depth)
+print(position*depth)

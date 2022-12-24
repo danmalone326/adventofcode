@@ -1,0 +1,132 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+
+
+def getPixel(x,y,image):
+    xMax = len(image[0])
+    yMax = len(image)
+    if ((x<0) or (y<0) or (x>=xMax) or (y>=yMax)):
+        return "."
+    else:
+        return image[y][x]
+
+def enhancePixel(xIn,yIn,image,algorithm):
+    result = ""
+    for y in range(yIn-1,yIn+2):
+        for x in range(xIn-1,xIn+2):
+            result += getPixel(x,y,image)
+    
+    # p(result)
+    result = result.replace(".","0")
+    result = result.replace("#","1")
+    # p(result)
+    result = int(result,2)
+    # p(value)
+    result = algorithm[result]
+    # p(result)
+
+    return result
+
+def enhance(image,algorithm):
+    newImage = []
+
+    for y in range(-1,len(image)+1):
+        newRow = ""
+        for x in range(-1,len(image[0])+1):
+            newRow += enhancePixel(x,y,image,algorithm)
+        newImage.append(newRow)
+    
+    return newImage
+
+def countLitPixels(image):
+    count = 0
+    for row in image:
+        count += row.count("#")
+    return count
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+blankIndex = findBlankLine(input)
+
+if (blankIndex > 1):
+    algorithm = ''.join(input[:blankIndex])
+else:
+    algorithm = input[0]
+# p(algorithm)
+p(len(algorithm))
+
+image = input[blankIndex+1:]
+p(len(image))
+p(len(image[0]))
+p(countLitPixels(image))
+
+image2 = enhance(image,algorithm)
+p(len(image2))
+p(countLitPixels(image2))
+
+image3 = enhance(image2,algorithm)
+p(image3)
+p(len(image3))
+p(countLitPixels(image3))

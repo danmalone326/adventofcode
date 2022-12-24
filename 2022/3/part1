@@ -1,0 +1,109 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+def findDup(a,b):
+    result = None
+    for c in a:
+        if (c in b):
+            result = c
+            break
+    
+    return result
+
+def findBadge(a):
+    result = None
+    for c in a[0]:
+        if (c in a[1] and c in a[2]):
+            result = c
+            break
+    return result
+
+def getPriority(c):
+    result = ord(c)
+    if (result >= 97):
+        result -= 96
+    else:
+        result -= 38
+    return result
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+pTotal = 0
+for line in input:
+
+    m = len(line)//2
+    d = findDup(line[:m],line[m:])
+    p(d)
+    p(getPriority(d))
+    pTotal += getPriority(d)
+
+p(pTotal)
+
+bTotal = 0
+line = 0
+while (line < len(input)):
+    b = findBadge(input[line:line+3])
+    p(b)
+    bTotal += getPriority(b)
+    line += 3
+p(bTotal)

@@ -1,0 +1,121 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+def execute(code,maxInst):
+    acc = 0
+    exePtr = 0
+    countInst = 0
+    completed = False
+    while (True):
+        # p(exePtr)
+        if (exePtr >= len(code)):
+            completed = True
+            break
+
+        inst = code[exePtr][0]
+        arg = code[exePtr][1]
+        if (inst == 'nop'):
+            exePtr += 1
+        elif (inst == 'acc'):
+            acc += arg
+            exePtr += 1
+        elif (inst == 'jmp'):
+            exePtr += arg
+
+        countInst += 1
+        if (countInst >= maxInst):
+            break
+
+    # p([acc,completed])
+    return [acc,completed]
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+# data = arrayOfIntFromCSV(input[0])
+# p(data)
+
+code = []
+for row in input:
+    inst,arg = arrayOfWordsFromString(row)
+    code.append([inst,int(arg)])
+
+# p(code)
+
+def swapNopJmp(i):
+    if (code[i][0] == 'nop'):
+        code[i][0] = 'jmp'
+    else:
+        code[i][0] = 'nop'
+
+for i in range(len(code)):
+    if (code[i][0] in ['nop','jmp']):
+        swapNopJmp(i)
+
+        result = execute(code,1000)
+        if (result[1]):
+            p(result)
+            p(i)
+
+        # swap back
+        swapNopJmp(i)
+

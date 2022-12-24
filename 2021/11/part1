@@ -1,0 +1,81 @@
+#!/usr/bin/python3
+import fileinput
+import json
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+grid = []
+xLen = 0
+yLen = 0
+flashCount = 0
+
+def increaseAll():
+    for x in range(xLen):
+        for y in range(yLen):
+            grid[x][y] += 1
+
+def resetFlashes():
+    for x in range(xLen):
+        for y in range(yLen):
+            if (grid[x][y] == -1):
+                grid[x][y] = 0
+
+def flashOne(x,y):
+    global flashCount
+
+    grid[x][y] = -1
+    flashCount += 1
+
+    for dx in range(-1,2):
+        for dy in range(-1,2):
+            tx = x+dx
+            ty = y+dy
+            # print("({},{}) -> ({},{})".format(x,y,tx,ty))
+            if (tx >= 0 and tx < xLen and ty >= 0 and ty < yLen):
+                if (grid[tx][ty] > -1):
+                    grid[tx][ty] += 1
+                    if (grid[tx][ty] > 9):
+                        flashOne(tx,ty)
+
+
+def flash():
+    for x in range(xLen):
+        for y in range(yLen):
+            if (grid[x][y] > 9):
+                flashOne(x,y)
+
+
+
+
+
+grid = readData()
+xLen = len(grid)
+yLen = len(grid)
+
+step = 0
+
+for i in range(2000):
+    step += 1
+    flashCount = 0
+    increaseAll()
+    flash()
+    resetFlashes()
+
+    if (flashCount == xLen * yLen):
+        print("Step {}".format(step))
+        break
+    # print("After step {}:".format(step))
+    # for row in grid:
+    #     for num in row:
+    #         print(num,end="")
+    #     print("")
+    # print(" ")
+
+# print(flashCount)

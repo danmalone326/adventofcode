@@ -1,0 +1,107 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = arrayOfIntFromList(input)
+#p(data)
+
+pCount = 25
+
+for i in range(pCount,len(data)):
+    followRule = False
+    for j in range(i-pCount,i-1):
+        for k in range(j+1,i):
+            if (data[j]+data[k] == data[i]):
+                followRule = True
+                break
+        if (followRule):
+           break
+    if (not followRule):
+        answer = data[i]
+        index = i
+        break
+
+p(answer)
+
+sum = 0
+for i in range(index):
+    for j in range(i+1,index):
+        sum = 0
+        max = data[i]
+        min = data[i]
+        for k in range(i,j+1):
+            sum += data[k]
+            if (data[k] > max):
+                max = data[k]
+            if (data[k] < min):
+                min = data[k]
+        if (sum == answer):
+            result = max + min
+        if (sum >= answer):
+            break
+    if (sum == answer):
+        break
+p(result)

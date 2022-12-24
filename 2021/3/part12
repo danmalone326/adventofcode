@@ -1,0 +1,109 @@
+#!/usr/bin/python3
+import fileinput
+
+input = []
+for line in fileinput.input():
+    bits = list(line.strip())
+    input.append(bits)
+
+print("gamma")
+gammaBits = []
+for bit in range(0,len(input[0])):
+    ones = 0
+    zeros = 0
+    for i in range(0,len(input)):
+        if (input[i][bit] == '1'):
+            ones += 1
+        else:
+            zeros += 1
+    if (ones > zeros): 
+        gammaBits.append("1")
+    else:
+        gammaBits.append("0")
+
+print(gammaBits)
+gammaBitsStr = "".join(gammaBits)
+print(gammaBitsStr)
+gamma = int(gammaBitsStr,2)
+print(gamma)
+
+print("epsilon")
+epsilonBits = []
+for i in range(0,len(gammaBits)):
+    if (gammaBits[i] == "1"):
+        epsilonBits.append("0")
+    else:
+        epsilonBits.append("1")
+
+print(epsilonBits)
+epsilonBitsStr = "".join(epsilonBits)
+print(epsilonBitsStr)
+epsilon = int(epsilonBitsStr,2)
+print(epsilon)
+
+print("Power")
+power = gamma * epsilon
+print(power)
+
+
+print("O2 Rating")
+
+o2Rating = input
+for bit in range(0,len(o2Rating[0])):
+    # first find bit criteria
+    ones = 0
+    zeros = 0
+    for i in range(0,len(o2Rating)):
+        if (o2Rating[i][bit] == '1'):
+            ones += 1
+        else:
+            zeros += 1
+    if (ones >= zeros): 
+        criteria = "1"
+    else:
+        criteria = "0"
+
+    o2RatingNew = []
+    for i in range(0,len(o2Rating)):
+        if (o2Rating[i][bit] == criteria):
+            o2RatingNew.append(o2Rating[i])
+    o2Rating = o2RatingNew
+    if (len(o2Rating) == 1):
+        break
+
+print (o2Rating[0])
+o2r = int("".join(o2Rating[0]),2)
+print(o2r)
+
+print("O2 Rating")
+
+co2Rating = input
+for bit in range(0,len(co2Rating[0])):
+    # first find bit criteria
+    ones = 0
+    zeros = 0
+    for i in range(0,len(co2Rating)):
+        if (co2Rating[i][bit] == '1'):
+            ones += 1
+        else:
+            zeros += 1
+    if (ones < zeros): 
+        criteria = "1"
+    else:
+        criteria = "0"
+
+    co2RatingNew = []
+    for i in range(0,len(co2Rating)):
+        if (co2Rating[i][bit] == criteria):
+            co2RatingNew.append(co2Rating[i])
+    co2Rating = co2RatingNew
+    if (len(co2Rating) == 1):
+        break
+
+print (co2Rating[0])
+co2r = int("".join(co2Rating[0]),2)
+print(co2r)
+
+print("Life Support")
+lifeSupport = o2r * co2r
+print(lifeSupport)

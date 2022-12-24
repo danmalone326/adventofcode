@@ -1,0 +1,134 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+
+def step(probe):
+    pos = probe[0]
+    vel = probe[1]
+    newPos = [pos[0] + vel[0], pos[1] + vel[1]]
+    newVel = [0,vel[1]-1]
+    if (vel[0] != 0):
+        newVel[0] = vel[0] - int(abs(vel[0])/vel[0])
+    
+    newProbe = [ newPos, newVel ]
+    return newProbe
+
+def hitTarget(probe,target):
+    if (( target[0][0] <= probe[0][0] <= target[1][0] ) and
+        ( target[0][1] <= probe[0][1] <= target[1][1] )):
+        return True
+    return False
+
+def missedTarget(probe,target):
+    if (( probe[0][0] > target[1][0] ) or
+        ( probe[0][1] < target[0][1] )):
+        return True
+    return False
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+x,y = input[0].split(', ')
+x = x.split('=')[1].split('..')
+y = y.split('=')[1].split('..')
+target = [ [int(x[0]),int(y[0])], [int(x[1]),int(y[1])]]
+
+p(target)
+
+yHit = []
+for xvStart in range(312):
+    for yvStart in range(-75,400):
+        position = [0,0]
+        velocity = [xvStart,yvStart]
+        probe = [position,velocity]
+#        print(probe)
+        yMax = 0
+        hit = False
+        missed = False
+        for i in range(800):
+            probe = step(probe)
+            if (probe[0][1] > yMax):
+                yMax = probe[0][1]
+            if (hitTarget(probe,target)):
+                hit = True
+                break
+            if (missedTarget(probe,target)):
+                missed = True
+                break
+
+        if (hit):
+            yHit.append([yMax,[xvStart,yvStart]])
+
+        if ((not missed) and (not hit)):
+            break
+    if ((not missed) and (not hit)):
+        break
+
+
+def sortY(s):
+    return s[0]
+
+if ((not missed) and (not hit)):
+    p("Not Enough")
+else:
+    yHit.sort()
+    p(yHit[-1])
+    p(len(yHit))

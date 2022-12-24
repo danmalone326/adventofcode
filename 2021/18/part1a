@@ -1,0 +1,168 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import re
+import math
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+# def isArray(x):
+#     return isinstance(x, list) 
+
+# def isPair(x):
+#     return (not (isinstance(x[0], list) or isinstance(x[1], list)))
+
+# def doPass(x,depth):
+#     thisDepth = depth+1
+#     if (isArray(x)):
+#         if ((thisDepth > 4) and (isPair(x))):
+#             # Do explode here
+#         else:
+#             result = doPass()
+#     else:
+
+def doPass(line):
+    try:
+        explodeIndex = 0
+        while (True): 
+            explodeIndex = re.search("\[(\d),(\d)\]",line[explodeIndex+1:]).start()+explodeIndex+1
+            tb = line[:explodeIndex]
+            if (tb.count("[") - tb.count("]") >= 4):
+                break
+    except:
+        explodeIndex = len(line)
+
+    try:
+        splitIndex,splitEnd = re.search("\d{2,}",line).span()
+    except:
+        splitIndex = len(line)
+
+    # p(explodeIndex)
+    # p(splitIndex)
+
+    if (explodeIndex < splitIndex):
+        # p("explode")    
+        b,a = line[explodeIndex+1:explodeIndex+4].split(",")
+        before = line[:explodeIndex]
+        after = line[explodeIndex+5:]
+        # p(before)
+        # p(after)
+
+        try:
+            pIndex = re.search("\d[^\d]+$",before).start()
+            # p(pIndex)
+            # p(before[pIndex])
+            # p(int(b))
+            # p(int(b)+int(before[pIndex]))
+            before = before[:pIndex] + str(int(b)+int(before[pIndex])) + before[pIndex+1:]
+        except:
+            pass
+
+        try:
+            m = re.search("\d+",after)
+            mIndex = m.start()
+            mLength = len(m.group())
+            after = after[:mIndex] + str(int(a) + int(after[mIndex:mIndex+mLength])) + after[mIndex+mLength:]
+        except:
+            pass
+
+        result = before + "0" + after
+        p(before +" 0 "+ after)
+
+    elif (splitIndex < explodeIndex):  # split
+        value = int(line[splitIndex:splitEnd])
+        before = line[:splitIndex]
+        after = line[splitEnd:]
+        result = before + "[" + str(math.floor(value/2)) + "," + str(math.floor((value+1)/2)) + "]" + after
+        p(before + " [" + str(math.floor(value/2)) + "," + str(math.floor((value+1)/2)) + "] " + after)
+    
+    else:
+        result = line
+
+    return result
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+sum = input[0]
+p("  "+sum)
+for line in input[1:2]:
+    p("+ "+line)
+    sum = "[" + sum + "," + line + "]"
+    p(sum)
+
+    # reduce
+    previousLine = ""
+    currentLine = sum
+    while (currentLine != previousLine):
+        # p(currentLine)
+        previousLine = currentLine
+        currentLine = doPass(previousLine)
+
+    sum = currentLine
+    p("= "+sum)
+
+p(currentLine)
+p("-")
+
+# data = json.loads(input[0])
+# p(data)
+
+# p(isinstance(data[0], list))
+# p(isinstance(data[1], list))

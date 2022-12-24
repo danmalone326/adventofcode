@@ -1,0 +1,95 @@
+#!/usr/bin/python3
+import fileinput
+import json
+
+def readData():
+    data = {}
+
+    data['draws'] = []
+    data['boards'] = []
+
+    for line in fileinput.input():
+        if (fileinput.isfirstline()):
+            data['draws'] = [int(i) for i in line.strip().split(',')]
+        elif (line.strip() == ""):
+            # next line is start of new board
+            data['boards'].append({})
+            currentBoard = data['boards'][-1]
+            currentBoard['numbers'] = []
+            currentBoard['marks'] = []
+        else:
+            currentBoard['numbers'].append([int(i) for i in line.strip().split()])
+            currentBoard['marks'].append([False] * len(currentBoard['numbers'][-1]))
+    
+    return data
+
+winners = []
+def alreadyWinner(index):
+    for i in range(len(winners)):
+        if (index == winners[i]['index']):
+            return True
+    return False
+  
+def addWinner(index,lastCalledNumber):
+    if (alreadyWinner(index)):
+        return
+
+    # Now calculate score
+    score = 0
+    board = gameData['boards'][index]
+    for row in range(len(board['marks'])):
+        winner = True
+        for column in range(len(board['marks'][row])):
+            if (board['marks'][row][column] == False):
+                score += board['numbers'][row][column]
+    score = score * lastCalledNumber
+    
+    winners.append({'index': index, 'score': score})
+
+def checkColumn(board,column):
+    result = True
+    for row in range(5):
+        if (board['marks'][row][column] == False):
+            result = False
+            break
+    return result
+
+def checkRow(board,row):
+    result = True
+    for column in range(5):
+        if (board['marks'][row][column] == False):
+            result = False
+            break
+    return result
+
+
+def markAndCheckBoard(index,calledNumber):
+    board = gameData['boards'][index]
+    # first mark
+    for row in range(len(board['numbers'])):
+        for column in range(len(board['numbers'][row])):
+            if (board['numbers'][row][column] == calledNumber):
+                board['marks'][row][column] = True
+    
+    # now check for win
+    for i in range(5):
+        if (checkRow(board,i) or checkColumn(board,i)):
+            addWinner(index,calledNumber)
+
+gameData = readData()
+
+# print(json.dumps(gameData, indent=2))
+
+for draw in gameData['draws']:
+    for index in range(len(gameData['boards'])):
+        markAndCheckBoard(index,draw)
+
+
+# print("Winner: " + str(winnerIndex))
+
+# print(json.dumps(gameData, indent=2))
+
+# addWinner(winnerIndex,lastCalledNumber)
+# print(winners[0]['score'])
+
+print(json.dumps(winners, indent=2))

@@ -1,0 +1,133 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def addPair(pairs,pair,count=1):
+    if (pair in pairs):
+        pairs[pair] += count
+    else:
+        pairs[pair] = count
+
+def doInsertion(pairs,pCount):
+    newPairs = {}
+    for key in pairs:
+        insert = rules[key]
+        addPair(newPairs,key[0]+insert,pairs[key])
+        addPair(newPairs,insert+key[1],pairs[key])
+        addPair(pCount,insert,pairs[key])
+    return newPairs
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+# data = arrayOfIntFromCSV(input[0])
+# p(data)
+
+template = input[0]
+
+rules = {}
+for rule in input[2:]:
+    key,value = rule.split(" -> ")
+    rules[key] = value
+
+p(rules)
+
+str = template
+p(str)
+
+pairs = {}
+for i in range(len(str)-1):
+    pair = str[i:i+2]
+    addPair(pairs,pair)
+
+p(pairs)
+
+pCount = {}
+for c in str:
+    addPair(pCount,c)
+
+for i in range(40):
+    p(i)
+    pairs = doInsertion(pairs,pCount)
+    p(pairs)
+
+# found = {}
+# max = 0
+# min = 999999999
+# for pair in pairs:
+#     addPair(found,pair[0],pairs[pair])
+#     addPair(found,pair[1],pairs[pair])
+
+p(pCount)
+
+p(template)
+# found[template[0]] -= 1
+# found[template[-1]] -= 1
+# p(found)
+
+max = 0
+min = None
+for f in pCount:
+    count = pCount[f]
+    # if (f in [template[0],template[-1]]): 
+    #     count = int(count/2)
+    if (count > max):
+        max = count
+    if ((min is None) or (count < min)):
+        min = count
+
+p(max-min)

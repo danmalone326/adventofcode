@@ -1,0 +1,95 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+map = {}
+paths = []
+def buildMap(rows):
+    global map
+
+    for row in rows:
+        caves = row.strip().split('-')
+        if (not(caves[0] in map)):
+            map[caves[0]] = []
+        map[caves[0]].append(caves[1])
+
+        if (not(caves[1] in map)):
+            map[caves[1]] = []
+        map[caves[1]].append(caves[0])
+
+currentPath = []
+def followPath(fromCave):
+    if (fromCave.islower() and (not (fromCave == 'start')) and (fromCave in currentPath)):
+        for value in currentPath:
+            if (value.islower() and (currentPath.count(value) > 1)):
+                return
+
+    if ((fromCave == 'start') and (len(currentPath) > 0)):
+        return
+    
+    currentPath.append(fromCave)
+
+    if (fromCave == 'end'):
+        paths.append(currentPath.copy())
+    else:
+        for nextCave in map[fromCave]:
+            followPath(nextCave)
+    
+    currentPath.pop()
+
+
+
+def findPaths():
+    pass
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+# data = arrayOfIntFromCSV(input[0])
+# p(data)
+
+buildMap(input)
+p(map)
+
+followPath('start')
+p(paths)
+p(len(paths))

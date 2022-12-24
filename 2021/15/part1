@@ -1,0 +1,264 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+from datetime import datetime
+import time
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+# allRisk = []
+# minSoFar = None
+def findRisk(x,y):
+    # p([x,y,risk])
+    # if (x==0):
+    #     p([x,y,minSoFar])
+    p([x,y])
+
+    # out of bounds check
+    if ((x>=len(grid[0])) or (y>=len(grid)) or (x<0) or (y<0)):
+        p("out")
+        return None
+
+    # already here
+    if (hereAlready[y][x]):
+        p("already")
+        return None    
+
+    hereAlready[y][x] = True
+    # already found path from here
+    if (riskThroughHere[y][x] is not None):
+        p("reused")
+        pass
+    
+    # found the exit
+    elif ((x==len(grid[0])-1) and (y==len(grid)-1)):
+        p("exit")
+        riskThroughHere[y][x] = grid[y][x]
+        # quit()
+    
+    else:
+        p("searching")
+
+        cheapPath = None
+        a = findRisk(x,y+1)
+        if (a is not None):
+            cheapPath = a
+
+        a = findRisk(x+1,y)
+        if ((a is not None) and ((cheapPath is not None) and (a<cheapPath))):
+            cheapPath = a
+
+        a = findRisk(x-1,y)
+        if ((a is not None) and ((cheapPath is not None) and (a<cheapPath))):
+            cheapPath = a
+
+        a = findRisk(x,y-1)
+        if ((a is not None) and ((cheapPath is not None) and (a<cheapPath))):
+            cheapPath = a
+
+        if (cheapPath is not None):
+            riskThroughHere[y][x] = cheapPath + grid[y][x]
+            p("found")
+        else: 
+            p("no way")
+            # return None
+        
+    hereAlready[y][x] = False      
+    return riskThroughHere[y][x] 
+
+
+def findShortestCurrent():
+    global hereAlready
+    global riskToHere
+    # p("findShortestCurrent")
+    xSaved = None
+    ySaved = None
+    minAvailable = None
+    for y in range(ySize):
+        for x in range(xSize):
+            if (not hereAlready[y][x] and (riskToHere[y][x] is not None)):
+                if ((minAvailable is None) or (riskToHere[y][x] < minAvailable)):
+                    minAvailable = riskToHere[y][x]
+                    xSaved = x
+                    ySaved = y
+    return [xSaved,ySaved]
+
+def updateRiskToHere(x,y,riskSoFar):
+    global hereAlready
+    global riskToHere
+    # p("updateRiskToHere")
+    if ((x>=xSize) or (y>=ySize) or (x<0) or (y<0)):
+        pass
+    else:
+        newRiskSoFar = riskSoFar + grid[y][x]
+        if ((riskToHere[y][x] is None) or (newRiskSoFar < riskToHere[y][x])):
+            riskToHere[y][x] = newRiskSoFar
+
+
+
+def nextWalk():
+    global hereAlready
+    global riskToHere
+    # p("nextWalk")
+    x,y = findShortestCurrent()
+    if (x is None):
+        return False
+
+    hereAlready[y][x] = True
+
+    thisRiskToHere = riskToHere[y][x]
+    updateRiskToHere(x-1,y,thisRiskToHere)
+    updateRiskToHere(x+1,y,thisRiskToHere)
+    updateRiskToHere(x,y-1,thisRiskToHere)
+    updateRiskToHere(x,y+1,thisRiskToHere)
+    
+    return True
+
+def expandGrid(grid):
+    newGrid = []
+    for row in grid:
+        newRow = []
+        for i in range(0,5):
+            for j in row:
+                newValue = j+i
+                if (newValue > 9):
+                    newValue -= 9
+                newRow.append(newValue)
+        newGrid.append(newRow)
+
+    for i in range(1,5):
+        for j in range(len(grid)):
+            topRow = newGrid[j]
+            newRow = []
+            for k in topRow:
+                newValue = k+i
+                if (newValue > 9):
+                    newValue -= 9
+                newRow.append(newValue)
+            newGrid.append(newRow)
+
+    return newGrid
+
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+# data = arrayOfIntFromCSV(input[0])
+# p(data)
+
+grid = arrayFromGridOfDigits(input)
+grid = expandGrid(grid)
+
+xSize = len(grid[0])
+ySize = len(grid)
+
+riskToHere = []
+for a in range(ySize):
+    c = []
+    for b in range(xSize):
+        c.append(None)
+    riskToHere.append(c)
+riskToHere[0][0] = 0
+
+hereAlready = []
+for a in range(ySize):
+    c = []
+    for b in range(xSize):
+        c.append(False)
+    hereAlready.append(c)
+# p(grid)
+
+# try:
+# p([xSize,ySize])
+
+start = int(time.time())
+last = 0
+lastRemaining = None
+interval = 10
+
+remaining = xSize*ySize
+while ((not (hereAlready[ySize-1][xSize-1])) and (nextWalk())):
+    remaining -= 1
+    now = int(time.time())
+    if (now >= (last + interval)):
+        timeStr = datetime.fromtimestamp(now).strftime("%H:%M:%S")
+        if (lastRemaining is not None):
+            p([timeStr,remaining,last - now,lastRemaining-remaining])
+        last = now
+        lastRemaining = remaining
+
+p(riskToHere[ySize-1][xSize-1])
+
+
+# except:
+#     p("except")
+#     p(riskToHere)
+#     p(hereAlready)
+
+# p(findRisk(0,1))
+# p(findRisk(1,0))
+# p(riskThroughHere)
+
+# min = None
+# for r in allRisk:
+#     if ((min is None) or (r < min)):
+#         min = r
+# p(len(allRisk))
+# p(r)

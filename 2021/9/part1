@@ -1,0 +1,81 @@
+#!/usr/bin/python3
+import fileinput
+import json
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        rows.append([int(c) for c in list(line.strip())])
+
+    return rows
+
+xMax = 0
+yMax = 0
+heightMap = []
+
+def getHeight(x,y):
+    if (x<0 or x>xMax or y<0 or y>yMax):
+        return 10
+    else:
+        return heightMap[x][y]
+
+def isLow(x,y):
+    myHeight = heightMap[x][y]
+    return (myHeight < getHeight(x-1,y-1) and myHeight < getHeight(x,y-1) and myHeight < getHeight(x+1,y-1) and
+            myHeight < getHeight(x-1,y) and myHeight < getHeight(x+1,y) and
+            myHeight < getHeight(x-1,y+1) and myHeight < getHeight(x,y+1) and myHeight < getHeight(x+1,y+1))
+
+def countBasin(x,y):
+    count = 0
+    myHeight = getHeight(x,y)
+    # print(myHeight)
+    if (myHeight < 9):
+        # print("({},{}):{}".format(x,y,myHeight))
+        if (not basinCounted[x][y]):
+            count += 1
+            basinCounted[x][y] = True
+        # else:
+        #     print("Double")
+        
+        if (getHeight(x+1,y) > myHeight):
+            count += countBasin(x+1,y)
+
+        if (getHeight(x-1,y) > myHeight):
+            count += countBasin(x-1,y)
+
+        if (getHeight(x,y+1) > myHeight):
+            count += countBasin(x,y+1)
+
+        if (getHeight(x,y-1) > myHeight):
+            count += countBasin(x,y-1)
+
+    return count
+
+
+heightMap = readData()
+xMax = len(heightMap)-1
+yMax = len(heightMap[0])-1
+
+basinCounted = []
+for x in range(xMax+1):
+    basinCounted.append([False]*(yMax+1))
+
+total = 0
+basins = []
+for x in range(xMax+1):
+    for y in range(yMax+1):
+        if (isLow(x,y)):
+            basins.append([x,y])
+            total += heightMap[x][y]+1
+
+# print(basins)
+print(total)
+
+basinSize = []
+for basinPos in basins:
+    basinSize.append(countBasin(basinPos[0],basinPos[1]))
+
+basinSize.sort()
+print(basinSize[-3:])
+
+print(basinSize[-1] * basinSize[-2] * basinSize[-3])

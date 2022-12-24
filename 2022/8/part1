@@ -1,0 +1,155 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+def isVisible(treeX,treeY,data):
+    
+    maxN = -1
+    for y in range(treeY):
+        thisHeight = data[y][treeX]
+        if (thisHeight > maxN):
+            maxN = thisHeight
+    
+    maxS = -1
+    for y in range(treeY+1,len(data)):
+        thisHeight = data[y][treeX]
+        if (thisHeight > maxS):
+            maxS = thisHeight
+
+    maxE = -1
+    for x in range(treeX+1,len(data[0])):
+        thisHeight = data[treeY][x]
+        if (thisHeight > maxE):
+            maxE = thisHeight
+
+    maxW = -1
+    for x in range(treeX):
+        thisHeight = data[treeY][x]
+        if (thisHeight > maxW):
+            maxW = thisHeight
+
+    myHeight = data[treeY][treeX]
+    result = False
+    if (myHeight > min(maxN,maxS,maxE,maxW) ):
+        result = True
+
+    return result
+
+def scenicScore(treeX,treeY,data):
+    myHeight = data[treeY][treeX]
+    
+    distanceN = 0
+    for y in range(treeY-1,-1,-1):
+        thisHeight = data[y][treeX]
+        distanceN+=1
+        if (thisHeight >= myHeight):
+            break
+    
+    distanceS = 0
+    for y in range(treeY+1,len(data)):
+        thisHeight = data[y][treeX]
+        distanceS+=1
+        if (thisHeight >= myHeight):
+            break
+
+
+    distanceE = 0
+    for x in range(treeX+1,len(data[0])):
+        thisHeight = data[treeY][x]
+        distanceE+=1
+        if (thisHeight >= myHeight):
+            break
+
+    distanceW = 0
+    for x in range(treeX-1,-1,-1):
+        thisHeight = data[treeY][x]
+        distanceW+=1
+        if (thisHeight >= myHeight):
+            break
+
+    result = distanceN * distanceS * distanceE * distanceW
+    # p((distanceN , distanceS , distanceE , distanceW))
+
+    return result
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = arrayFromGridOfDigits(input)
+p(data)
+
+#count = len(data[0])*2 + len(data)*2 - 4
+count = 0
+maxScore = 0
+for x in range(0,len(data[0])):
+    for y in range(0,len(data)):
+        if (isVisible(x,y,data)):
+            count+=1
+            print("X",end="")
+        else:
+            print(".",end="")
+        score = scenicScore(x,y,data)
+        if (score > maxScore):
+            maxScore = score
+    print("")
+p(count)
+p(maxScore)

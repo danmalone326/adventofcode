@@ -1,0 +1,30 @@
+#!/usr/bin/python3
+import fileinput
+import json
+
+def readData():
+    for line in fileinput.input():
+        fishAge = [int(i) for i in line.strip().split(',')]
+    return fishAge
+
+def processFish(fishAge):
+    newFish = 0
+
+    for i in range(len(fishAge)):
+        if (fishAge[i] == 0):
+            fishAge[i] = 6
+            newFish += 1
+        else:
+            fishAge[i] -= 1
+
+    fishAge.extend([8] * newFish)
+
+
+
+fishAge = readData()
+
+days = 80
+for i in range(days):
+    processFish(fishAge)
+    print(len(fishAge))
+

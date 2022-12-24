@@ -1,0 +1,14 @@
+#!/usr/bin/python3
+import fileinput
+
+previous = None
+counter = 0
+
+for line in fileinput.input():
+    num = int(line)
+    if (previous is not None):
+        if (num > previous):
+            counter += 1
+    previous = num
+
+print(counter)

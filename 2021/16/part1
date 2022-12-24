@@ -1,0 +1,213 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+hexBinMap = {}
+def updateHexBinMap():
+    for i in range(16):
+        h = format(i,'X')
+        b = "{:04b}".format(i)
+        hexBinMap[h] = b
+
+def hex2bin(h):
+    result = ""
+    for c in h:
+        result += hexBinMap[c]
+    return result
+
+# packet object
+#  version (3 bits)
+#  typeID (3) - 4 = a, other = b
+#  a) literal
+#  b) lengthTypeID
+#  b) length
+#  b) subPackets
+#
+#  packet and remainder position sent in return array
+def decodePacket(binaryStream):
+    packet = {}
+    position = 0
+
+    length = 3
+    packet["version"] = int(binaryStream[position:position+length],2)
+    position += length
+    packet["typeID"] = int(binaryStream[position:position+length],2)
+    position += length
+
+    if (packet["typeID"] == 4):
+        literalBinary = ""
+        moreLiteral = True
+        while (moreLiteral):
+            moreLiteral = (binaryStream[position:position+1] == "1")
+            literalBinary += binaryStream[position+1:position+5]
+            position += 5
+        packet["literal"] = int(literalBinary,2)
+    else:
+        packet["subPackets"] = []
+        packet["lengthTypeID"] = int(binaryStream[position])
+        position += 1
+
+        if (packet["lengthTypeID"] == 0):
+            length = 15
+            bitLength = int(binaryStream[position:position+length],2)
+            position += length
+            packet["length"] = bitLength
+
+            startPosition = position
+            while (position < startPosition+bitLength):
+                nextPacket,length = decodePacket(binaryStream[position:])
+                packet["subPackets"].append(nextPacket)
+                position += length
+
+        else:
+            length = 11
+            packetCount = int(binaryStream[position:position+length],2)
+            position += length
+            packet["length"] = packetCount
+            for i in range(packetCount):
+                nextPacket,length = decodePacket(binaryStream[position:])
+                packet["subPackets"].append(nextPacket)
+                position += length
+
+    return [packet,position]
+
+def versionSum(packet): 
+    sum = packet["version"]
+    if ("subPackets" in packet):
+        for subPacket in packet["subPackets"]:
+            sum += versionSum(subPacket)
+    return sum
+
+def computePacket(packet): 
+    typeID = packet["typeID"]
+    # p(typeID)
+    if (typeID == 0):
+        result = 0
+        for subPacket in packet["subPackets"]:
+            result += computePacket(subPacket)
+
+    elif (typeID == 1):
+        result = 1
+        for subPacket in packet["subPackets"]:
+            result *= computePacket(subPacket)
+
+    elif (typeID == 2):   # minimum
+        result = computePacket(packet["subPackets"][0])
+        for subPacket in packet["subPackets"][1:]:
+            value = computePacket(subPacket)
+            if (value < result):
+                result = value
+
+    elif (typeID == 3):   # maximum
+        result = computePacket(packet["subPackets"][0])
+        for subPacket in packet["subPackets"][1:]:
+            value = computePacket(subPacket)
+            if (value > result):
+                result = value
+
+    elif (typeID == 4):
+        result = packet["literal"]
+
+    elif (typeID == 5):   # greater than
+        v0 = computePacket(packet["subPackets"][0])
+        v1 = computePacket(packet["subPackets"][1])
+        if (v0 > v1):
+            result = 1
+        else:
+            result = 0
+
+    elif (typeID == 6):   # less than
+        v0 = computePacket(packet["subPackets"][0])
+        v1 = computePacket(packet["subPackets"][1])
+        if (v0 < v1):
+            result = 1
+        else:
+            result = 0
+
+    elif (typeID == 7):   # equal
+        v0 = computePacket(packet["subPackets"][0])
+        v1 = computePacket(packet["subPackets"][1])
+        if (v0 == v1):
+            result = 1
+        else:
+            result = 0
+
+
+    return result
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+updateHexBinMap()
+# p(hexBinMap)
+
+for row in input:
+    p(row)  
+
+    binaryStream = hex2bin(row)
+    # p(binaryStream)
+
+    packet,position = decodePacket(binaryStream)
+    # p(packet)
+
+    p(versionSum(packet))
+    p(computePacket(packet))

@@ -1,0 +1,136 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# x,y coords per line
+def arrayOfCoordsFromList(input):
+    rows = [arrayOfIntFromCSV(c) for c in input]
+    return rows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def markCoord(line,x):
+    result = line[0:x] + "#" + line[x+1:]
+    return result
+
+def yFold(grid,y):
+    for y2 in range(y+1,len(grid)):
+        yLanding = y+(y-y2)
+        for x in range(len(grid[y2])):
+            if (grid[y2][x] == "#"):
+                grid[yLanding] = markCoord(grid[yLanding],x)
+    return grid[0:y]
+
+def xFold(grid,x):
+    for y in range(len(grid)):
+        # p(y)
+        for x2 in range(x+1,len(grid[y])):
+            xLanding = x+(x-x2)
+            if (grid[y][x2] == "#"):
+                grid[y] = markCoord(grid[y],xLanding)
+        grid[y] = grid[y][0:x]
+    return grid
+
+def countHash(grid):
+    count = 0
+    for row in grid:
+        count += row.count("#")
+    return count
+
+
+input = getInput()
+breakLine = findBlankLine(input)
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = arrayOfCoordsFromList(input[0:breakLine])
+# p(data)
+
+xMax = 0
+yMax = 0
+for coord in data:
+    if (coord[0] > xMax):
+        xMax = coord[0]
+    if (coord[1] > yMax):
+        yMax = coord[1]
+
+p([xMax,yMax])
+
+grid = ['.'*(xMax+1)] * (yMax+1)
+
+# p(grid)
+
+for coord in data:
+    x = coord[0]
+    y = coord[1]
+    grid[y] = markCoord(grid[y],x)
+
+# p(grid)
+
+
+commands = input[breakLine+1:]
+
+# p(commands)
+
+for command in commands:
+    p(command)
+    d = command.strip().split()[2].split('=')
+    # p(d)
+    if (d[0] == "y"):
+        grid = yFold(grid,int(d[1]))
+    else:
+       grid = xFold(grid,int(d[1]))
+    # break
+    p(grid) 
+
+count = countHash(grid)
+p(count)
+p(grid)

@@ -1,0 +1,141 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = value
+
+def newDirectory(name,parent):
+    result = {"name": name, "parentPath": parent, "files": {}}
+    return result
+
+def newFile(name,size):
+    result = {"name": name, "size": size}
+    return result
+
+def directorySize(directoryPath):
+    result = 0
+    for file in directories[directoryPath]["files"]:
+        result += directories[directoryPath]["files"][file]["size"]
+    for directory in directories:
+        if (directories[directory]["parentPath"] == directoryPath):
+            result += directorySize(directory)
+    return result
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+directories = {}
+directories[""] = newDirectory("",None)
+
+cwd = ""
+for line in input:
+    lineParts = line.split(" ")
+    if (lineParts[0] == "$"):  # command
+        command = lineParts[1]
+        if (command == "cd"):   
+            directoryName = lineParts[2]
+            if (directoryName == "/"):
+                cwd = ""
+            elif (directoryName == ".."):
+                cwd = directories[cwd]["parentPath"]
+            else:
+                directoryPath = cwd + "/" + directoryName
+                if (directoryPath not in directories):
+                    directories[directoryPath] = newDirectory(directoryName,cwd)
+                cwd = directoryPath
+        elif (lineParts[1] == "ls"):
+            pass
+    else:                       # directory listing
+        if (lineParts[0] == "dir"):
+            directoryName = lineParts[1]
+            directoryPath = cwd + "/" + directoryName
+            if (directoryPath not in directories):
+                directories[directoryPath] = newDirectory(directoryName,cwd)
+        else: 
+            fileSize, fileName = lineParts
+            directories[cwd]["files"][fileName] = newFile(fileName,int(fileSize))
+
+p(directories)
+
+result = 0
+for d in directories:
+    p(d)
+    s = directorySize(d)
+    p(s)
+    if (s <= 100000):
+        result += s
+p(result)
+
+p(None)
+
+diskSize = 70000000
+required = 30000000
+used = directorySize("")
+needed = required - (diskSize - used)
+p(used)
+p(needed)
+
+result = diskSize
+for d in directories:
+    p(d)
+    s = directorySize(d)
+    p(s)
+    if (s >= needed) and (s < result):
+            result = s
+p(result)

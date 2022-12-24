@@ -1,0 +1,74 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = arrayOfIntFromList(input)
+#p(data)
+
+for i in range(len(data)):
+    for j in range(len(data)):
+        if ((i!=j) and ((data[i]+data[j])==2020)):
+            print(data[i])
+            print(data[j])
+            print(data[i]*data[j])
+            break
+
+for i in range(len(data)):
+    for j in range(len(data)):
+        if (j!=i):
+            for k in range(len(data)):
+                if ((k!=i) and (k!=j) and ((data[i]+data[j]+data[k])==2020)):
+                    print(data[i])
+                    print(data[j])
+                    print(data[k])
+                    print(data[i]*data[j]*data[k])
+                    break
+
