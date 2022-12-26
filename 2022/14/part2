@@ -1,0 +1,211 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseRocks(input):
+    result = []
+    for line in input:
+        thisPath = []
+        splitLine = re.split(r' -> ',line)
+        for point in splitLine:
+            thisPath.append([int(i) for i in point.split(',')])
+        result.append(thisPath)
+    return result
+
+def makeMap(paths,startPoint):
+    minPoint = startPoint.copy()
+    maxPoint = startPoint.copy()
+
+    for path in paths:
+        for point in path:
+            minPoint[0] = min(minPoint[0],point[0])
+            minPoint[1] = min(minPoint[1],point[1])
+            maxPoint[0] = max(maxPoint[0],point[0])
+            maxPoint[1] = max(maxPoint[1],point[1])
+            
+    # p(minPoint)
+    # p(maxPoint)
+
+    height = maxPoint[1] - minPoint[1] + 1 + 2
+    width = height * 2 + 1
+
+    mapSize = [width,height]
+    mapTranslate = [startPoint[0]-height,0]
+
+    # mapSize = [maxPoint[0]-minPoint[0]+1,maxPoint[1]-minPoint[1]+1]
+    # mapTranslate = minPoint.copy()
+
+    # add floor path
+    paths.append([[mapTranslate[0],height+mapTranslate[1]-1],[width+mapTranslate[0]-1,height+mapTranslate[1]-1]])
+
+    grid = []
+    for y in range(mapSize[1]):
+        grid.append(list('.' * mapSize[0]))
+
+    for path in paths:
+        for l in range(len(path) - 1):
+            p1 = path[l].copy()
+            p2 = path[l+1].copy()
+           
+            p1[0] -= mapTranslate[0]
+            p1[1] -= mapTranslate[1]
+            p2[0] -= mapTranslate[0]
+            p2[1] -= mapTranslate[1]
+
+            # if x is same
+            if (p1[0] == p2[0]):
+                x = p1[0]
+                if (p1[1] < p2[1]):
+                    yStart = p1[1]
+                    yEnd = p2[1]+1
+                else:
+                    yStart = p2[1]
+                    yEnd = p1[1]+1
+                for y in range(yStart,yEnd,1):
+                    grid[y][x] = "#"
+            else:
+                y = p1[1]
+                if (p1[0] < p2[0]):
+                    xStart = p1[0]
+                    xEnd = p2[0]+1
+                else:
+                    xStart = p2[0]
+                    xEnd = p1[0]+1
+                for x in range(xStart,xEnd,1):
+                    grid[y][x] = "#"
+
+    sp = startPoint.copy()
+    sp[0] -= mapTranslate[0]
+    sp[1] -= mapTranslate[1]
+
+    map = {
+        "size": mapSize,
+        "translate": mapTranslate,
+        "startPoint": sp,
+        "grid": grid
+    }
+
+    return map
+
+def printMapGrid(map):
+    for y in range(map["size"][1]):
+        print("".join(map["grid"][y]))
+
+def getMapGrid(x,y,map):
+    result = "."
+    if ((0 <= x < map["size"][0]) and
+        (0 <= y < map["size"][1])):
+        result = map["grid"][y][x]
+    return result
+
+def setMapGrid(x,y,c,map):
+    map["grid"][y][x] = c
+
+# True means the sand stopped
+def dropOneSand(map):
+    stopped = False
+    off = False
+
+    pos = map["startPoint"].copy()
+
+    if (getMapGrid(pos[0],pos[1],map) == 'o'):
+        off = True
+
+    while (not (stopped or off)):
+        if (getMapGrid(pos[0],pos[1]+1,map) == "."):
+            pos[1] += 1
+        elif (getMapGrid(pos[0]-1,pos[1]+1,map) == "."):
+            pos[0] -= 1
+            pos[1] += 1
+        elif (getMapGrid(pos[0]+1,pos[1]+1,map) == "."):
+            pos[0] += 1
+            pos[1] += 1
+        else:
+            stopped = True
+            setMapGrid(pos[0],pos[1],"o",map)
+
+
+        if (not ((0 <= pos[0] < map["size"][0]) and
+                 (0 <= pos[1] < map["size"][1]))):
+            off = True
+
+    # p((stopped,off))
+
+    return stopped
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+paths = parseRocks(input)
+
+startPoint = [500,0]
+map = makeMap(paths,startPoint)
+# printMapGrid(map)
+
+count = 0
+while (dropOneSand(map)):
+    count += 1
+printMapGrid(map)
+
+p(count)

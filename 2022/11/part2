@@ -84,6 +84,7 @@ def readMonkeyData(input):
 
             if (attr == "Operation"):
                 monkeys[currentMonkey]["operation"] = re.split(r' = ',value)[-1]
+                # monkeys[currentMonkey]["function"] = eval('lambda old: ' + monkeys[currentMonkey]["operation"])
 
             if (attr == "Test"):
                 monkeys[currentMonkey]["test"] = int(value.split(' ')[-1])
@@ -101,7 +102,7 @@ def throwToMonkey(item,monkeyNum,monkeys):
 
 def computeNewWorry(old,operation):
     # p(old)
-    result = math.floor(int(eval(operation))/3)
+    result = int(eval(operation))
     return result
 
 def doOneMonkey(monkeyNum,monkeys):
@@ -109,6 +110,8 @@ def doOneMonkey(monkeyNum,monkeys):
     for item in monkey["items"]:
         monkey["inspections"] += 1
         newWorry = computeNewWorry(item,monkey["operation"])
+        # newWorry = monkey["function"](item)
+        # p(newWorry)
         if (newWorry%monkey["test"] == 0):
             throwToMonkey(newWorry,monkey["trueNext"],monkeys)
         else:
@@ -121,7 +124,20 @@ def doAllMonkeys(monkeys):
         if (monkeys[monkeyNum]):
             doOneMonkey(monkeyNum,monkeys)
 
+def getGCD(monkeys):
+    gcd = 1
+    for monkeyNum in range(len(monkeys)):
+        if (monkeys[monkeyNum]):
+            gcd = gcd * monkeys[monkeyNum]["test"]
 
+    return gcd
+
+def reduceWorry(value,monkeys):
+    for monkeyNum in range(len(monkeys)):
+        if (monkeys[monkeyNum]):
+            for i in range(len(monkeys[monkeyNum]["items"])):
+                monkeys[monkeyNum]["items"][i] %= value
+   
 
 input = getInput()
 
@@ -131,10 +147,15 @@ input = getInput()
 monkeys = readMonkeyData(input)
 # p(monkeys)
 
-for i in range(20):
+gcd = getGCD(monkeys)
+
+for i in range(10000):
+    if (i%100 == 0):
+        # p(i)
+        reduceWorry(gcd,monkeys)
     doAllMonkeys(monkeys)
 
-p(monkeys)
+# p(monkeys)
 
 activeCounts = []
 for monkeyNum in range(len(monkeys)):

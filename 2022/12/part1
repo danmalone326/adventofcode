@@ -1,0 +1,198 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def generateGridSquare(height,distance):
+    result = {
+        "heightStr": height,
+        "height": ord(height),
+        "distance": distance
+    }
+    return result
+
+def getGridSquare(x,y,grid):
+    result = None
+    if ((0 <= x < len(grid[0])) and 
+        (0 <= y < len(grid))):
+        result = grid[y][x]
+
+    return result
+
+def generateGrid(input):
+    grid = []
+    for y in range(len(input)):
+        grid.append([])
+        for x in range(len(input[0])):
+            height = input[y][x]
+            distance = None
+            if (height == 'S'):
+                height = 'a'
+            elif (height == 'E'):
+                height = 'z'
+                distance = 0
+            grid[y].append(generateGridSquare(height,distance))
+    return grid
+
+# def generatePosition(x,y):
+#     return {"x": x, "y": y}
+
+
+def height(x,y,grid):
+    result = None
+    if ((0 <= x < len(grid[0])) and 
+        (0 <= y < len(grid))):
+        result = grid[y][x]["height"]
+
+    return result
+
+def currentDistance(x,y,grid):
+    result = None
+    if ((0 <= x < len(grid[0])) and 
+        (0 <= y < len(grid))):
+        result = grid[y][x]["distance"]
+
+    return result
+
+def updateGridSquare(x,y,grid):
+    oldDistance = currentDistance(x,y,grid)
+    myHeight = height(x,y,grid)
+    changed = False
+
+    distances = []
+
+    neighbor = getGridSquare(x+1,y,grid)
+    if (neighbor and (neighbor["height"] <= myHeight+1)):
+        distances.append(neighbor["distance"])
+
+    neighbor = getGridSquare(x-1,y,grid)
+    if (neighbor and (neighbor["height"] <= myHeight+1)):
+        distances.append(neighbor["distance"])
+
+    neighbor = getGridSquare(x,y+1,grid)
+    if (neighbor and (neighbor["height"] <= myHeight+1)):
+        distances.append(neighbor["distance"])
+
+    neighbor = getGridSquare(x,y-1,grid)
+    if (neighbor and (neighbor["height"] <= myHeight+1)):
+        distances.append(neighbor["distance"])
+
+    newDistance = min((i for i in distances if i is not None),default=None)
+    if (newDistance is not None):
+        newDistance += 1
+
+    if  (newDistance is not None and (oldDistance is None or (newDistance < oldDistance))):
+        grid[y][x]["distance"] = newDistance
+        changed = True
+
+    return changed
+
+def updateGrid(grid):
+    changed = False
+    changeCount = 0
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if (updateGridSquare(x,y,grid)):
+                changed = True
+                changeCount += 1
+
+    p(changeCount)
+    return changed
+
+def printGrid(grid):
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            current = currentDistance(x,y,grid)
+            if (current is None):
+                current = '.'
+            print('{0: >2} '.format(current),end="")
+        print("")
+   
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+
+grid = generateGrid(input)
+
+# count = 20
+while (updateGrid(grid)): 
+    pass
+    # printGrid(grid)
+    # count-=1
+
+for y in range(len(input)):
+    if ('S' in input[y]):
+        startY = y
+        startX = input[y].index('S')
+        p((startX,startY))
+        p(grid[startY][startX])
+
+minDistance = 10000
+for y in range(len(grid)):
+    for x in range(len(grid[0])):
+        if (grid[y][x]['heightStr'] == 'a'):
+            distance = grid[y][x]['distance']
+            if ((distance is not None) and (distance < minDistance)):
+                minDistance = distance
+
+p(minDistance)

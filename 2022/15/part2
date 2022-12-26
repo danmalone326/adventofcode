@@ -1,0 +1,227 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseSensorData(input):
+    data = {"sensors": []}
+    minPos = [None,None]
+    maxPos = [None,None]
+
+    for line in input:
+        m = re.match(r'^Sensor at x=([-\d]*), y=([-\d]*): closest beacon is at x=([-\d]*), y=([-\d]*)$',line)
+        x1 = int(m.group(1))
+        y1 = int(m.group(2))
+        x2 = int(m.group(3))
+        y2 = int(m.group(4))
+
+        position = [x1,y1]
+        beaconPosition = [x2,y2]
+        distance = manhattanDistance(position,beaconPosition)
+
+        if (minPos[0] is None):
+            minPos[0] = x1 - distance
+            minPos[1] = y1 - distance
+            maxPos[0] = x1 + distance
+            maxPos[1] = y1 + distance
+        else:
+            minPos[0] = min(minPos[0], x1 - distance)
+            minPos[1] = min(minPos[1], y1 - distance)
+            maxPos[0] = max(maxPos[0], x1 + distance)
+            maxPos[1] = max(maxPos[1], y1 + distance)           
+
+        sensor = {
+            "position": position,
+            "beaconPosition": beaconPosition,
+            "distance": distance
+        }
+        data["sensors"].append(sensor)
+
+    data["minPos"] = minPos
+    data["maxPos"] = maxPos
+
+    return data
+
+def manhattanDistance(p1,p2):
+    return abs(p1[0]-p2[0])+abs(p1[1]-p2[1])
+
+def withinDistance(position,center,distance):
+    thisDistance = manhattanDistance(position,center)
+    return (thisDistance <= distance)
+
+def isBeacon(position,data):
+    result = "U"
+
+    for i in range(len(data["sensors"])):
+        sensor = data["sensors"][i]
+        if (withinDistance(position,sensor["beaconPosition"],0)):
+            result = "Y"
+            break
+        if (withinDistance(position,sensor["position"],sensor["distance"])):
+            result = "N"
+            break
+
+    return result
+
+def deletePoint(position,lines):
+    # p("deletePoint")
+    return deleteLine(position,position,lines)
+
+def deleteLine(start,end,lines):
+    # p("delete")
+    newLines = []
+    for i in range(len(lines)):
+        line = lines[i]
+        if ((line[0] < start) and (end < line[1])):
+            newLines.append([line[0],start-1])
+            newLines.append([end+1,line[1]])
+        elif ((start <= line[0]) and (line[1] <= end)):
+            pass
+        elif (line[0] <= end < line[1]):
+            newLines.append([end+1,line[1]])
+        elif (line[0] < start <= line[1]):
+            newLines.append([line[0],start-1])
+        else:
+            newLines.append(line)
+
+    return newLines
+
+def addLine(start,end,lines):
+    # p("add")
+    newLines = []
+    for i in range(len(lines)):
+        line = lines[i]
+        if ((start <= line[0] <= end) or (start <= line[1] <= end) or
+            (line[0] <= start <= line[1])):
+            start = min(start,line[0])
+            end = max(end,line[1])
+        else:
+            newLines.append(line)
+
+    newLines.append([start,end])
+
+    return newLines
+
+def countPoints(lines):
+    count = 0
+    for i in range(len(lines)):
+        count += lines[i][1] - lines[i][0] + 1
+    return count
+
+def checkRow(row,start,end,data):
+    lines = []
+    lines = addLine(start,end,lines)
+
+    for sensor in data["sensors"]:
+        if (abs(row-sensor["position"][1]) <= sensor["distance"]):
+            halfWidth = sensor["distance"] - abs(row-sensor["position"][1])
+            # p(halfWidth)
+            lines = deleteLine(sensor["position"][0]-halfWidth, sensor["position"][0] + halfWidth, lines)
+            if (len(lines) == 0):
+                break
+        # p("-")
+        # p(sensor)
+        # p(lines)
+
+    result = None
+    if (len(lines) == 1):
+        result = [lines[0][0],row]
+
+    return result
+
+# def checkRow2(row,data):
+#     count = 0
+#     for sensor in data["sensors"]:
+#         if (abs(row-sensor["position"][1]) <= sensor["distance"]):
+#             count += (sensor["distance"] - abs(row-sensor["position"][1])) * 2 + 1
+#             if (sensor["position"][1] == row):
+#                 count -= 1
+#             if (sensor["beaconPosition"][1] == row):
+#                 count -= 1
+
+#     return count
+
+# def checkRow1(row,data):
+#     count = 0
+#     for i in range(data["minPos"][0],data["maxPos"][0]+1,1):
+#         position = [i,row]
+#         if (isBeacon(position,data) == "N"):
+#             count += 1
+#     return count
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseSensorData(input)
+# p(data)
+
+# max=20
+max=4000000
+for i in range(max+1):
+    result = checkRow(i,0,max,data)
+    if (i%10000 == 0):
+        p(i)
+    if (result is not None):
+        break
+
+answer = result[0] * 4000000 + result[1]
+p(answer)

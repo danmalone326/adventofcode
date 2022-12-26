@@ -1,0 +1,206 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+        
+def parseNextItem(string):
+    result = None
+    charactersUsed = 0
+
+    if (string[charactersUsed] == '['):
+        result = []
+        charactersUsed += 1
+        while (True):
+            if (string[charactersUsed] == ']'):
+                charactersUsed += 1
+                break
+            elif (string[charactersUsed] == ','):
+                charactersUsed += 1
+
+            item,subUsed = parseNextItem(string[charactersUsed:])
+            result.append(item)
+            charactersUsed += subUsed
+    else:
+        while ((string[charactersUsed] != ']') and 
+                (string[charactersUsed] != ',')):
+            charactersUsed += 1
+        result = int(string[:charactersUsed])
+
+    return result,charactersUsed
+
+# 1 = in order
+# -1 = out of order
+# 0 = same
+def inOrder(left,right):
+    result = 0
+
+    if (isinstance(left, int) and isinstance(right, int)):
+        if (left < right):
+            result = 1
+        elif (left > right):
+            result = -1
+        else:
+            result = 0
+        # p((left,right,result))
+    elif (isinstance(left, int)):
+        result = inOrder([left],right)
+    elif (isinstance(right, int)):
+        result = inOrder(left,[right])
+    else:
+        maxLen = max([len(left),len(right)],default=0)
+        count = 0
+        while ((count < maxLen) and (result == 0)):
+            if (count >= len(left)):
+                result = 1
+            elif (count >= len(right)):
+                result = -1
+            else:
+                result = inOrder(left[count],right[count])
+            count += 1
+    # p('-')
+    # p((left,right,result))
+
+    return result
+
+def sortPackets(packets):
+    result = []
+
+    # p("hello")
+    for i in range(len(packets)):
+        # p(i)
+        # p(len(packets))
+        nextIndex = 0
+        for j in range(1,len(packets)):
+            # p(nextIndex)
+            # p(j)
+            # p("-")
+            # p(packets[nextIndex])
+            # p(packets[j])
+            if (inOrder(packets[nextIndex],packets[j]) == -1):
+                nextIndex = j
+        result.append(packets[nextIndex])
+        tempPackets = packets[:nextIndex]
+        tempPackets.extend(packets[nextIndex+1:])
+        packets = tempPackets
+    return result
+
+def indexPackets(item,packets):
+    result = None
+    for i in range(len(packets)):
+        if (inOrder(item,packets[i]) == 0):
+            result = i
+            break
+    return result
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+# string = '[1,2,3]'
+# match = re.match(r'^\[(.*)\]$',string)
+# if (match):
+#     p(match.groups(1))
+
+# p("".split(","))
+
+pairs = []
+packets = []
+count = 0
+indexSum = 0
+
+while ((count * 3) <= len(input)):
+    inputIndex = count*3
+    left,c1 = parseNextItem(input[inputIndex])
+    right,c2 = parseNextItem(input[inputIndex+1])
+    pairs.append({
+        "left": left, 
+        "right": right
+    })
+    packets.append(left)
+    packets.append(right)
+
+    o = inOrder(left,right)
+    # p(o)
+    if (o == 1):
+        # p(inputIndex)
+        indexSum += count+1
+
+
+    count += 1
+
+# p(pairs)
+
+p(indexSum)
+
+itemA = parseNextItem("[[2]]")[0]
+itemB = parseNextItem("[[6]]")[0]
+
+packets.append(itemA)
+packets.append(itemB)
+
+sortedPackets = sortPackets(packets)
+
+# p(sortedPackets)
+
+indexA = indexPackets(itemA,sortedPackets)+1
+indexB = indexPackets(itemB,sortedPackets)+1
+
+p(indexA * indexB)
