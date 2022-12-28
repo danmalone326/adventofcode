@@ -1,0 +1,247 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = {
+        "split": [],
+        "raw": input,
+        "exterior": {},
+        "ev": []
+    }
+    for line in input:
+        data["split"].append(rawToPoint(line))
+    return data
+
+def pointToRaw(point):
+    return ','.join([str(z) for z in point])
+
+def rawToPoint(raw):
+    return [int(z) for z in raw.split(',')]
+
+def isCube(point,data):
+    raw = pointToRaw(point)
+    return (raw in data["raw"])
+
+def isExterior(point,data):
+    result = False
+    rawPoint = pointToRaw(point)
+
+    if (rawPoint in data["exterior"]):
+        result = data["exterior"][rawPoint]
+    elif (rawPoint in data["ev"]):
+        pass
+    else:        
+        data["ev"].append(rawPoint)
+        for i in range(3):
+            for j in range(-1,2,2):  # should get -1 and 1
+                tempPoint = point.copy()
+                tempPoint[i] += j
+                result = isExterior(tempPoint,data)
+                if (result == True):
+                    break
+            if (result == True):
+                break
+        data["ev"].pop()
+
+        data["exterior"][rawPoint] = result
+        
+    return result
+
+def primeExterior(data):
+    minPoint = data["minPoint"]
+    maxPoint = data["maxPoint"]
+
+    # first prime the cubes and outermost points
+    for x in range(minPoint[0]-1,maxPoint[0]+2):
+        for y in range(minPoint[1]-1,maxPoint[1]+2):
+            for z in range(minPoint[2]-1,maxPoint[2]+2):
+                point = [x,y,z]
+                rawPoint = pointToRaw(point)
+                if (isCube(point,data)):
+                    data["exterior"][rawPoint] = False
+                elif ((x <= minPoint[0]) or (x >= maxPoint[0]) or
+                      (y <= minPoint[1]) or (y >= maxPoint[1]) or
+                      (z <= minPoint[2]) or (z >= maxPoint[2])):
+                    data["exterior"][rawPoint] = True
+
+    # now do multiple passes until there are no changes
+    changes = True
+    while (changes):
+        changes = False
+
+        for x in range(minPoint[0]-1,maxPoint[0]+2):
+            for y in range(minPoint[1]-1,maxPoint[1]+2):
+                for z in range(minPoint[2]-1,maxPoint[2]+2):
+                    point = [x,y,z]
+                    rawPoint = pointToRaw(point)
+                    if (rawPoint in data["exterior"]):
+                        continue
+                    else:
+                        # one True makes this true
+                        # all (6) False makes this false
+                        # otherwise we don't know yet
+                        thisResult = None
+                        falseCount = 0
+                        for i in range(3):
+                            for j in range(-1,2,2):  # should get -1 and 1
+                                tempPoint = point.copy()
+                                tempPoint[i] += j
+                                rawTempPoint = pointToRaw(tempPoint)
+                                if (rawTempPoint in data["exterior"]):
+                                    if (data["exterior"][rawTempPoint]):
+                                        thisResult = True
+                                    else:
+                                        falseCount += 1
+                                if (thisResult):
+                                    break
+                            if (thisResult):
+                                break
+                        if (falseCount == 6):
+                            thisResult = False
+
+                        if (thisResult is not None):
+                            data["exterior"][rawPoint] = thisResult
+                            changes = True
+
+
+
+
+
+
+def countExteriorCache(data):
+    t = 0
+    f = 0
+    for s in data["exterior"]:
+        if (data["exterior"][s]):
+            t+=1
+        else:
+            f+=1
+    p("t: " + str(t))
+    p("f: " + str(f))
+
+def countCovered(point,data):
+    result = 0
+    for i in range(3):
+        for j in range(-1,2,2):  # should get -1 and 1
+            tempPoint = point.copy()
+            tempPoint[i] += j
+            if (isCube(tempPoint,data)):
+                result+=1
+    return result
+
+def countExposed(point,data):
+    return (6 - countCovered(point,data))
+
+def countExterior(point,data):
+    result = 0
+    for i in range(3):
+        for j in range(-1,2,2):  # should get -1 and 1
+            tempPoint = point.copy()
+            tempPoint[i] += j
+            if (isExterior(tempPoint,data)):
+                result+=1
+    return result
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseInput(input)
+# p(data)
+
+minPoint = data["split"][0].copy()
+maxPoint = data["split"][0].copy()
+
+for cube in data["split"]:
+    for i in range(3):
+        minPoint[i] = min(minPoint[i],cube[i])
+        maxPoint[i] = max(maxPoint[i],cube[i])
+
+data["minPoint"] = minPoint
+data["maxPoint"] = maxPoint
+# p(minPoint)
+# p(maxPoint)
+
+p(len(data["raw"]))
+
+primeExterior(data)
+countExteriorCache(data)
+
+exposedTotal = 0
+exteriorTotal = 0
+for point in data["split"]:
+    exposedCount = countExposed(point,data)
+    exteriorCount = countExterior(point,data)
+    exposedTotal += exposedCount
+    exteriorTotal += exteriorCount
+p(exposedTotal)
+p(exteriorTotal)
+countExteriorCache(data)
+
+
+# count = 0
+# for point in data["split"]:
+#     count += countExterior(point,data)
+# p(count)
+
+# p(data)

@@ -1,0 +1,221 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = {}
+
+    for line in input:
+        m = re.match(r'^Valve ([^\s]*) has flow rate=(\d+); tunnels? leads? to valves? (.*)$',line)
+        valve = m.group(1)
+        rate = m.group(2)
+        tunnels = re.split(r', ',m.group(3))
+        data[valve] = {
+            "valve": valve,
+            "rate": int(rate),
+            "tunnels": tunnels
+        }
+
+    return data
+
+def computeShortestPaths(data):
+    for v in data:
+        valve = data[v]
+        paths = {}
+        for nv in valve["tunnels"]:
+            paths[nv] = {
+                "next": nv,
+                "cost": 1
+            }
+        valve["paths"] = paths
+
+    changed = True
+    while (changed):
+        changed = False
+        for v in data:
+            valve = data[v] 
+            for nv in valve["tunnels"]:
+                nextValve = data[nv]
+                for nvp in nextValve["paths"]:
+                    if nvp not in valve["paths"]:
+                        valve["paths"][nvp] = {
+                            "next": nv,
+                            "cost": nextValve["paths"][nvp]["cost"] + 1
+                        }
+                        changed = True
+                    else:
+                        if (valve["paths"][nvp]["cost"] > nextValve["paths"][nvp]["cost"] + 1):
+                            valve["paths"][nvp] = {
+                                "next": nv,
+                                "cost": nextValve["paths"][nvp]["cost"] + 1
+                            }
+
+# my path cache
+# current-time-valves: pressure released
+# AA-30-BB-CC-DD: 250
+pathCache = {}
+
+def getCacheKey(currentValve,timeRemaining,valvesRemaining):
+    return currentValve + "-" + str(timeRemaining) + "-" + '-'.join(valvesRemaining)
+
+def setCache(currentValve,timeRemaining,valvesRemaining,pressureReleased):
+    global pathCache
+    key = getCacheKey(currentValve,timeRemaining,valvesRemaining)
+    pathCache[key] = pressureReleased
+
+def getCache(currentValve,timeRemaining,valvesRemaining):
+    global pathCache
+    result = None
+    key = getCacheKey(currentValve,timeRemaining,valvesRemaining)
+    if (key in pathCache):
+        # p("cache hit!")
+        result = pathCache[key]
+    return result
+
+
+def bestResultFromHere(currentValve,timeRemaining,valvesRemaining,data):
+    result = 0
+
+    cacheResult = getCache(currentValve,timeRemaining,valvesRemaining)
+    if (cacheResult is not None):
+        result = cacheResult
+    else:
+        for nextValve in valvesRemaining:
+            thisResult = 0
+            timeUsed = data[currentValve]["paths"][nextValve]["cost"] + 1
+            if (timeUsed + 1 < timeRemaining):
+                nextTimeRemaining = timeRemaining - timeUsed
+                thisResult += nextTimeRemaining * data[nextValve]["rate"]
+
+                nextValvesRemaining = valvesRemaining.copy()
+                nextValvesRemaining.remove(nextValve)
+
+                if (len(nextValvesRemaining) > 0):
+                    thisResult += bestResultFromHere(nextValve,nextTimeRemaining,nextValvesRemaining,data)
+        
+            result = max(result,thisResult)
+
+        setCache(currentValve,timeRemaining,valvesRemaining,result)
+
+    return result
+
+def bestShared(currentValve,timeRemaining,valvesRemaining,data):
+    result = 0
+
+    # generate the bitwise comparisons
+    bc = []
+    for i in range(len(valvesRemaining)):
+        bc.append(pow(2,i))
+
+    for iteration in range(pow(2,len(valvesRemaining))):
+        if (iteration%500 == 0):
+            p(iteration)
+            
+        myValves = []
+        elephantValves = []
+
+        for i in range(len(valvesRemaining)):
+            if (iteration & bc[i]):
+                myValves.append(valvesRemaining[i])
+            else:
+                elephantValves.append(valvesRemaining[i])
+
+        myResult = bestResultFromHere(currentValve,timeRemaining,myValves,data)
+        elephantResult = bestResultFromHere(currentValve,timeRemaining,elephantValves,data)
+
+        result = max(result,myResult+elephantResult)
+    
+    return result
+
+def importantValves(data):
+    result = []
+    for v in data:
+        if (data[v]["rate"] > 0):
+            result.append(v)
+    return result
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseInput(input)
+# p(data)
+
+computeShortestPaths(data)
+# p(data)
+
+p(math.factorial(len(data)))
+
+valvesRemaining = importantValves(data)
+# p(len(valvesRemaining))
+p(math.factorial(len(valvesRemaining)))
+
+# p(getCacheKey('AA',30,valvesRemaining))
+
+answer = bestResultFromHere('AA',30,valvesRemaining,data)
+print("self: ",end="")
+p(answer)
+
+answer = bestShared('AA',26,valvesRemaining,data)
+print("shared: ",end="")
+p(answer)

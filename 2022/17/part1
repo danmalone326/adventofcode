@@ -1,0 +1,383 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import time
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+
+sprites = []
+sprites.append(
+    [
+        int("1111",2)
+    ]
+)
+sprites.append(
+    [
+        int("010",2),
+        int("111",2),
+        int("010",2)
+    ]
+)
+sprites.append(
+    [
+        int("001",2),
+        int("001",2),
+        int("111",2)
+    ]
+)
+sprites.append(
+    [
+        int("1",2),
+        int("1",2),
+        int("1",2),
+        int("1",2)
+    ]
+)
+sprites.append(
+    [
+        int("11",2),
+        int("11",2)
+    ]
+)
+
+nextSprite = 0
+
+def getNextSprite():
+    global nextSprite
+
+    result = sprites[nextSprite]
+    nextSprite = (nextSprite + 1) % len(sprites)
+
+    return result
+
+def getSpriteWidth(sprite):
+    return len(format(max(sprite),'b'))
+
+def resetSprite(n = 0):
+    global nextSprite
+    nextSprite = n
+
+nextJet = 0
+jetPattern = None
+def getNextJet():
+    global nextJet
+
+    # p(nextJet)
+    result = jetPattern[nextJet]
+    # p(result)
+    nextJet = (nextJet + 1) % len(jetPattern)
+    # p(nextJet)
+
+    return result
+
+def resetJet(n = 0):
+    global nextJet
+    nextJet = n
+
+chamberWidth = 7
+chamberFloor = int("1"*(chamberWidth+2),2)
+chamberLayer = int("1"+"0"*chamberWidth+"1",2)
+
+def initializeChamber():
+    chamber = []
+    chamber.append(chamberFloor)
+    return chamber
+
+def addChamberLayer(chamber,count=1):
+    for i in range(count):
+        chamber.append(chamberLayer)
+
+def printChamber(chamber):
+    for level in reversed(range(len(chamber))):
+        bitArray = list(format(chamber[level],'b'))
+        bitArray[0] = '|'
+        bitArray[len(bitArray)-1] = '|'
+        for i in range(1,len(bitArray)-1):
+            if (bitArray[i] == '1'):
+                if (level == 0): 
+                    bitArray[i] = '-'
+                else:
+                    bitArray[i] = '#'
+            else:
+                bitArray[i] = '.'
+        print("".join(bitArray))
+    print("")
+
+# x,y is location for bottom left of sprite
+def overlayChamber(x,y,sprite,chamber):
+    leftOffset = chamberWidth + 2 - getSpriteWidth(sprite) - x
+    # p(getSpriteWidth(sprite))
+    # p(leftOffset)
+    upOffset = y
+
+    for i in reversed(range(len(sprite))):
+        chamber[len(sprite)-1-i+upOffset] |= (sprite[i] << leftOffset)
+
+def topLayer(chamber):
+    result = -1
+
+    for y in reversed(range(len(chamber))):
+        if (not isLayerClear(y,chamber)):
+            result = y
+            break
+
+    return result
+    
+
+def isLayerClear(y,chamber):
+    return (chamber[y] == chamberLayer)
+
+def isClear(x,y,sprite,chamber):
+    result = True
+
+    leftOffset = chamberWidth + 2 - getSpriteWidth(sprite) - x
+    upOffset = y
+
+    for i in reversed(range(len(sprite))):
+        if (chamber[len(sprite)-1-i+upOffset] & (sprite[i] << leftOffset)):
+            result = False
+            break
+    
+    return result
+   
+def tempPrintOverlay(x,y,sprite,chamber):
+    tempChamber = chamber.copy()
+    overlayChamber(x,y,sprite,tempChamber)
+    printChamber(tempChamber)
+    time.sleep(.01)
+
+def doDrop(sprite,chamber):
+    tl = topLayer(chamber)
+    neededChamberHeight = tl + 4 + len(sprite)
+    addChamberLayer(chamber,neededChamberHeight-len(chamber))
+
+    x = 3
+    y = tl + 4
+
+    # tempPrintOverlay(x,y,sprite,chamber)
+
+    done = False
+    while (not done):
+        jet = getNextJet()
+        if ((jet == ">") and (isClear(x+1,y,sprite,chamber))):
+            x+=1
+        elif ((jet == "<") and (isClear(x-1,y,sprite,chamber))):
+            x-=1
+
+        # p(jet)
+        # tempPrintOverlay(x,y,sprite,chamber)
+
+        if (isClear(x,y-1,sprite,chamber)):
+            y-=1
+        else: 
+            done = True
+            overlayChamber(x,y,sprite,chamber)
+        # p("v")
+        # tempPrintOverlay(x,y,sprite,chamber)
+
+# pattern consists of the top layer pattern and the next jet
+def currentPattern(chamber):
+    return chamber[topLayer(chamber)] + nextJet * 10000
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+
+jetPattern = input[0]
+
+p(len(jetPattern))
+p(len(sprites))
+# p(jetPattern)
+
+
+# first find where the pattern starts
+
+chamber = initializeChamber()
+# printChamber(chamber)
+repeatSprite = 0
+spriteRepeatList = []
+count=0
+while (True):
+    doDrop(getNextSprite(),chamber)
+    count+=1
+    if (nextSprite == repeatSprite):
+        repeatPattern = currentPattern(chamber)
+        if (repeatPattern in spriteRepeatList):
+            break
+        else:
+            spriteRepeatList.append(repeatPattern)
+
+repeatJet = nextJet
+
+p("repeatJet=" + str(repeatJet))
+p("repeatSprite=" + str(repeatSprite))
+
+# now get the rock count and height before the pattern
+chamber = initializeChamber()
+
+resetJet(0)
+resetSprite(0)
+
+count=0
+# while (not ((nextSprite == repeatSprite) and (nextJet == repeatJet))):
+while (not (currentPattern(chamber) == repeatPattern)):
+    doDrop(getNextSprite(),chamber)
+    count+=1
+
+preRocks = count
+preHeight = topLayer(chamber)
+
+# now get the rock count and height during the pattern
+chamber = initializeChamber()
+
+resetJet(repeatJet)
+resetSprite(0)
+
+count=0
+while (not ((currentPattern(chamber) == repeatPattern) and (count > 0))):
+    doDrop(getNextSprite(),chamber)
+    count+=1
+
+repeatRocks = count
+repeatHeight = topLayer(chamber)
+
+
+# target = 2022
+target = 1000000000000
+repeatCount = (target - preRocks) // repeatRocks
+postCount = (target - preRocks) % repeatRocks
+
+# now get the rock count and height after the pattern
+chamber = initializeChamber()
+
+resetJet(repeatJet)
+resetSprite(0)
+
+count=0
+while (count < postCount):
+    doDrop(getNextSprite(),chamber)
+    count+=1
+
+postRocks = count
+postHeight = topLayer(chamber)
+
+totalRocks = preRocks + repeatRocks*repeatCount + postRocks
+totalHeight = preHeight + repeatHeight*repeatCount + postHeight
+
+p("pre")
+p(preRocks)
+p(preHeight)
+
+p("repeat")
+p(repeatRocks)
+p(repeatHeight)
+
+p("post")
+p(postRocks)
+p(postHeight)
+
+p(totalRocks)
+p(totalHeight)
+
+# p("-")
+# p(repeat)
+# p(repeatCount)
+# p(remainCount)
+
+# p("-")
+
+# chamber = initializeChamber()
+# # printChamber(chamber)
+
+# for i in range(repeat):
+#     doDrop(getNextSprite(),chamber)
+
+# repeatHeight = topLayer(chamber)
+# p(repeatHeight)
+
+# chamber = initializeChamber()
+# # printChamber(chamber)
+
+# for i in range(remainCount):
+#     doDrop(getNextSprite(),chamber)
+
+# remainHeight = topLayer(chamber)
+# p(remainHeight)
+
+# p(repeatHeight*repeatCount + remainHeight)
+
+# doDrop(getNextSprite(),chamber)
+# doDrop(getNextSprite(),chamber)
+# doDrop(getNextSprite(),chamber)
+# doDrop(getNextSprite(),chamber)
+# doDrop(getNextSprite(),chamber)
+
+# print(isClear(3,4,sprites[4],chamber))
+# print(topLayer(chamber))
+
+# overlayChamber(3,4,sprites[4],chamber)
+# printChamber(chamber)
+# print(topLayer(chamber))
+
+# print(isClear(4,0,sprites[4],chamber))
+
+

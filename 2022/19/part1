@@ -1,0 +1,103 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseBlueprints(input):
+    result = []
+
+    for line in input:
+        this = {
+            "number": None,
+            "costs": {}
+        }
+        m = re.match(r'^Blueprint (\d+): (.*)\.$',line)
+        blueprint = m.group(1)
+        remainder = m.group(2)
+        p(blueprint)
+        this["number"] = blueprint
+
+
+        recipies = re.split(r'\. ', remainder.strip())
+        for recipe in recipies:
+            p(recipe)
+
+            m = re.match(r'Each (\w+) robot costs (\d+) (\w+)(?: and (\d+) (\w+))?',recipe)
+            robotType = m.group(1)
+            this["costs"][robotType] = {
+                m.group(3): int(m.group(2))
+            }
+            if (m.group(4) is not None):
+                this["costs"][robotType][m.group(5)] = int(m.group(4))
+        
+        result.append(this)
+    
+    return result
+
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseBlueprints(input)
+
+p(data)
