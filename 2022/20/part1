@@ -1,0 +1,189 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+multiplier = 811589153
+def createLinkedList(input):
+    global multiplier
+
+    result = []
+
+    prev = None
+    for numStr in input:
+        temp = {
+            "number": int(numStr) * multiplier,
+            "prev": prev,
+            "next": None
+        }
+        result.append(temp)
+
+        if (prev is not None):
+            prev["next"] = temp
+
+        prev = temp
+    
+    result[0]["prev"] = result[-1]
+    result[-1]["next"] = result[0]
+
+    return result
+
+def llRemove(item,data):
+    item["prev"]["next"] = item["next"]
+    item["next"]["prev"] = item["prev"]
+
+def llInsert(item,prev,data):
+    item["prev"] = prev
+    item["next"] = prev["next"]
+    prev["next"] = item
+    item["next"]["prev"] = item
+
+def llNext(item,n,data):
+    result = item
+    for i in range(n):
+        result = result["next"]
+    return result
+
+def llPrev(item,n,data):
+    result = item
+    for i in range(n):
+        result = result["prev"]
+    return result
+
+def llFindNumber(number,data):
+    result = None
+    for i in range(len(data)):
+        if (data[i]["number"] == number):
+            result = data[i]
+            break
+    return result
+
+def llPrintItem(item,data):
+    p({"number": item["number"], "next": item["next"]["number"], "prev": item["prev"]["number"]})
+
+def llPrint(item,data):
+    result = []
+    temp = item
+    for i in range(len(data)):
+        result.append({"number": temp["number"], "next": temp["next"]["number"], "prev": temp["prev"]["number"]})
+        temp = temp["next"]
+
+    p(result)
+
+def mix(data):
+    for i in range(len(data)):
+    # for i in range(1):
+        item = data[i]
+        moves = abs(item["number"]) % (len(data)-1)
+
+        if (moves != 0):
+            prev = item["prev"]
+            llRemove(item,data)
+
+            if (item["number"] > 0):
+                newPrev = llNext(prev,moves,data)
+            else:
+                newPrev = llPrev(prev,moves,data)
+
+            llInsert(item,newPrev,data)
+        
+        # p("moved: "+str(item["number"]))
+        # llPrint(data[0],data)
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = createLinkedList(input)
+p(len(data))
+
+# item = data[0]
+
+# llPrintItem(item,data)
+# moves = 4999
+# item = llPrev(item,moves,data)
+# item = llPrev(item,-1,data)
+# llPrintItem(item,data)
+
+# llRemove(item,data)
+# llPrint(data[1],data)
+
+# llInsert(item,data[1],data)
+# llPrint(data[1],data)
+# llPrint(data[0],data)
+
+for i in range(10):
+    mix(data)
+
+# llPrint(item,data)
+
+
+total = 0
+item = llFindNumber(0,data)
+for i in range(3):
+    item = llNext(item,1000,data)
+    number = item["number"]
+    total += number
+    p(number)
+
+p(total)
+

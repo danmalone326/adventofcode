@@ -1,0 +1,236 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    result = {}
+
+    map = [" "]
+    for line in input[:findBlankLine(input)]:
+        map.append(" "+line)
+
+    result["map"] = map
+
+    path = []
+    remainingPath = input[findBlankLine(input)+1]
+    while (remainingPath):
+        if (remainingPath[0] in ['R','L']):
+            path.append(remainingPath[0])
+            remainingPath = remainingPath[1:]
+        else:
+            m = re.match(r'^\d*',remainingPath)
+            g = m.group(0)
+            path.append(g)
+            remainingPath = remainingPath[len(g):]
+
+    result["path"] = path
+    return result
+
+fpr = {}
+def firstPositionInRow(y,data):
+    result = None
+    if (y in fpr):
+        result = fpr[y]
+    else:
+        result = data["map"][y].rfind(' ')+1
+        fpr[y] = result
+    return result
+
+lpr = {}
+def lastPositionInRow(y,data):
+    result = None
+    if (y in lpr):
+        result = lpr[y]
+    else:
+        result = len(data["map"][y])-1
+        lpr[y] = result
+    return result
+
+fpc = {}
+def firstPositionInColumn(x,data):
+    result = None
+    if (x in fpc):
+        return fpc[x]
+    else:
+        map = data["map"]
+        for y in range(len(map)):
+            if (x >= len(map[y])):
+                continue
+            elif (map[y][x] != ' '):
+                result = y
+                break
+        fpc[x] = result
+    return result
+
+lpc = {}
+def lastPositionInColumn(x,data):
+    result = None
+    if (x in lpc):
+        return lpc[x]
+    else:
+        map = data["map"]
+        for y in reversed(range(len(map))):
+            if (x >= len(map[y])):
+                continue
+            elif (map[y][x] != ' '):
+                result = y
+                break
+        lpc[x] = result
+    return result
+
+def setStartingPosition(data):
+    result = [
+        firstPositionInRow(1,data),
+        1,
+        ">"
+    ]
+    return result
+
+def computePassword(position):
+    result = 1000 * position[1] + 4 * position[0]
+    d = position[2]
+    if (d == '>'):
+        result += 0
+    elif (d == 'v'):
+        result += 1
+    elif (d == '<'):
+        result += 2
+    else:
+        result += 3
+
+    return result
+
+# rotate table
+rotateTable = {
+    ">R": "v",
+    "vR": "<",
+    "<R": "^",
+    "^R": ">",
+    ">L": "^",
+    "vL": ">",
+    "<L": "v",
+    "^L": "<"
+}
+def newDirection(currentDirection,turn):
+    result = rotateTable[currentDirection+turn]
+    return result
+
+def followPath(currentPosition,step,data):
+    result = currentPosition.copy()
+
+    currentDirection = currentPosition[2]
+
+    if (step in ['R','L']):
+        result[2] = newDirection(currentDirection,step)
+    else:
+        map = data["map"]
+        x = currentPosition[0]
+        y = currentPosition[1]
+
+        for i in range(int(step)):
+        # compute next step
+            if (currentDirection == ">"):
+                x += 1
+                if ((x >= len(map[y])) or (map[y][x] == ' ')):
+                    x = firstPositionInRow(y,data)
+            elif (currentDirection == '<'):
+                x -= 1
+                if ((x < 1) or (map[y][x] == ' ')):
+                    x = lastPositionInRow(y,data)
+            elif (currentDirection == 'v'):
+                y += 1
+                if ((y >= len(map)) or (x >= len(map[y])) or (map[y][x] == ' ')):
+                    y = firstPositionInColumn(x,data)
+            else:
+                y -= 1
+                if ((y < 1) or (x >= len(map[y])) or (map[y][x] == ' ')):
+                    y = lastPositionInColumn(x,data)
+
+            if (map[y][x] != '.'):
+                break
+            else:
+                result[0] = x
+                result[1] = y
+
+    return result
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseInput(input)
+
+p(data)
+
+currentPosition = setStartingPosition(data)
+p(currentPosition)
+
+for step in data["path"]:
+    p(step)
+    currentPosition = followPath(currentPosition,step,data)
+    p(currentPosition)
+
+
+
+password = computePassword(currentPosition)
+p(password)

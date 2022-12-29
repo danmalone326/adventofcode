@@ -1,0 +1,209 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseMonkeys(input):
+    result = {}
+
+    for line in input:
+        m = re.match(r'^(\w*): (.*)$', line)
+        monkey = m.group(1)
+        expression = m.group(2)
+        result[monkey] = expression
+
+    return result
+
+def doNextMonkey(data):
+    # find the first monkey that can be evaluated, e.g. doesn't have any monkey names
+    for monkey in data:
+        try:
+            value = str(eval(data[monkey]))
+            thisMonkey = monkey
+            break
+        except NameError:
+            pass
+    
+    # now evaluate 
+    
+    p(thisMonkey)
+
+    # now replace all occurrences
+    for monkey in data:
+        data[monkey] = re.sub(thisMonkey,value,data[monkey],2)
+    
+    # we are done with this monkey
+    data.pop(thisMonkey)
+
+def doAllMonkeys(data):
+    result = None
+
+    while (True):
+        doNextMonkey(data)
+        try:
+            result = str(eval(data['root']))
+            break
+        except NameError:
+            pass
+
+    return result
+
+def evaluate(monkey,data):
+    result = None
+    if (not (monkey in data)):
+        return monkey
+    if (data[monkey].isnumeric()):
+        result = data[monkey]
+    else:
+        m = re.match(r'(\w{4}) (\S+) (\w{4})',data[monkey])
+        monkey1 = m.group(1)
+        op = m.group(2)
+        monkey2 = m.group(3)
+
+        value1 = evaluate(monkey1,data)
+        value2 = evaluate(monkey2,data)
+
+        result = "(" + value1 +" "+ op +" "+ value2 + ")"
+        if (value1.isnumeric() and value2.isnumeric()):                
+            result = str(int(eval(result)))
+        
+        data[monkey] = result
+
+    return result
+        
+def invert(rootMonkey,answerMonkey,answer,data):
+    newData = data.copy()
+    newData[answerMonkey] = answer
+
+    findMonkey = rootMonkey
+    while (findMonkey != answerMonkey):
+        for monkey in data:
+            if (findMonkey in data[monkey]):
+                foundMonkey = monkey
+                break
+        
+        p(foundMonkey)
+        p(data[foundMonkey])
+
+        m = re.match(r'(\w{4}) (\S+) (\w{4})',data[foundMonkey])
+        monkey1 = m.group(1)
+        operator = m.group(2)
+        monkey2 = m.group(3)
+
+        if (findMonkey == monkey1):
+            if (operator == "+"):
+                newData[findMonkey] = foundMonkey +" - "+ monkey2
+            elif (operator == "-"):
+                newData[findMonkey] = foundMonkey +" + "+ monkey2
+            elif (operator == "*"):
+                newData[findMonkey] = foundMonkey +" / "+ monkey2
+            elif (operator == "/"):
+                newData[findMonkey] = foundMonkey +" * "+ monkey2
+        else:
+            if (operator == "+"):
+                newData[findMonkey] = foundMonkey +" - "+ monkey1
+            elif (operator == "-"):
+                newData[findMonkey] = monkey1  +" - "+ foundMonkey
+            elif (operator == "*"):
+                newData[findMonkey] = foundMonkey +" / "+ monkey1
+            elif (operator == "/"):
+                newData[findMonkey] = monkey1 +" / "+ foundMonkey
+
+        findMonkey = foundMonkey
+
+    return newData
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseMonkeys(input)
+p(data["root"])
+m = re.match(r'(\w{4}) (\S+) (\w{4})',data["root"])
+monkey1 = m.group(1)
+op = m.group(2)
+monkey2 = m.group(3)
+
+data.pop("humn")
+
+value1 = evaluate(monkey1,data.copy())
+value2 = evaluate(monkey2,data.copy())
+
+p(value1)
+p(value2)
+
+copy = data.copy()
+
+newData = invert("humn",monkey1,value2,copy)
+
+value3 = evaluate("humn",newData)
+p(value3)
+
+# answer1 = 0
+# humn = 0
+# while (answer1 != value2):
+#     humn -= 1
+#     answer1 = str(int(eval(value1)))
+#     if (humn%10000 == 0):
+#         p(humn)
+#         p(answer1)
+# print("")
+# p(humn)
