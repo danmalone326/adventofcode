@@ -1,0 +1,244 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+rows = 0
+columns = 0
+
+leftRows = []
+rightRows = []
+upColumns = []
+downColumns = []
+def loadBlizzards(input):
+    global rows, columns
+
+    rows = len(input) - 2
+    columns = len(input[0]) - 2
+
+    for i in range(columns):
+        upColumns.append("")
+        downColumns.append("")
+
+    for line in input[1:-1]:
+        leftRows.append(re.sub('>|\^|v','.',line[1:-1]))
+        rightRows.append(re.sub('<|\^|v','.',line[1:-1]))
+
+        for i,c in enumerate(line[1:-1]):
+            if (c == '^'):
+                upColumns[i] += c
+            else:
+                upColumns[i] += "."
+
+            if (c == 'v'):
+                downColumns[i] += c
+            else:
+                downColumns[i] += "."
+
+def isBlizzard(x,y,t):
+    result = False
+
+    # p([x,y,t])
+    # print(leftRows[y][(x+t)%columns] + rightRows[y][(x-t)%columns] +
+    #         upColumns[x][(y+t)%rows]  + downColumns[x][(y-t)%rows])
+
+    result = ( (leftRows[y][(x+t)%columns] != '.') or
+               (rightRows[y][(x-t)%columns] != '.') or
+               (upColumns[x][(y+t)%rows] != '.') or
+               (downColumns[x][(y-t)%rows] != '.') )
+
+    return result
+
+def isClear(x,y,t):
+    return not isBlizzard(x,y,t)
+
+def availableMoves(x,y,t):
+    result = []
+
+    # p([x,y])
+    # p([rows,columns])
+
+    if ((0 <= x < columns) and ((0 <= y < rows))):
+        if ((0 < x) and (isClear(x-1,y,t))):
+            result.append([x-1,y])
+        if ((x < columns-1) and (isClear(x+1,y,t))):
+            result.append([x+1,y])
+        if ((0 < y) and (isClear(x,y-1,t))):
+            result.append([x,y-1])
+        if ((y < rows-1) and (isClear(x,y+1,t))):
+            result.append([x,y+1])
+
+        # Check for the "don't move" option 
+        if (isClear(x,y,t)):
+            result.append([x,y])
+
+    # Special handling for the entry and exit points
+    # next to the entry point
+    if ((x == 0) and (y == 0)):
+        result.append([x,y-1])
+
+    # on the entry point
+    if ((x == 0) and (y == -1)):
+        if (isClear(x,y+1,t)):
+            result.append([x,y+1])
+        result.append([x,y])
+
+    # next to the exit point
+    if ((x == columns-1) and (y == rows-1)):
+        result.append([x,y+1])
+
+    # on the exit point
+    if ((x == columns-1) and (y == rows)):
+        if (isClear(x,y-1,t)):
+            result.append([x,y-1])
+        result.append([x,y])
+        
+
+    # p([len(result),result])
+
+    return result
+
+minOutTimeSoFar = 500
+doMinuteCache = {}
+
+def resetMinuteCache():
+    global doMinuteCache, minOutTimeSoFar
+    minOutTimeSoFar += 500
+    doMinuteCache = {}
+
+
+def doMinute(x,y,xEnd,yEnd,t):
+    global doMinuteCache, minOutTimeSoFar
+
+    # p([x,y,t])
+    result = None
+    cacheKey = str(x) + "-" + str(y) + "-" + str(t)
+
+    if ((minOutTimeSoFar is not None) and (t >= minOutTimeSoFar)):
+        pass
+    elif ((x == xEnd) and (y == yEnd)):
+        outTime = t
+        print("Out in "+str(outTime))
+        if ((minOutTimeSoFar is None) or (outTime < minOutTimeSoFar)):
+            minOutTimeSoFar = outTime
+        result = outTime
+    elif (cacheKey in doMinuteCache):
+        result = doMinuteCache[cacheKey]
+    else:
+        thisTime = None
+        moves = availableMoves(x,y,t+1)
+        for move in moves:
+            t2 = doMinute(move[0],move[1],xEnd,yEnd,t+1)
+            if ((thisTime is None) or ((t2 is not None) and (t2 < thisTime))):
+                thisTime = t2
+        result = thisTime
+
+    doMinuteCache[cacheKey] = result
+    return result
+
+def printGrid(t):
+
+    print("#."+''.join([c*(columns) for c in '#']))
+    for y in range(rows):
+        thisRow = "#"
+
+        for x in range(columns):
+            if (isBlizzard(x,y,t)):
+                thisRow += "O"
+            else:
+                thisRow += "."
+        thisRow += "#"
+        print(thisRow)
+    print(''.join([c*(columns) for c in "#"])+".#")
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+loadBlizzards(input)
+
+# p(leftRows)
+# p(rightRows)
+# p(upColumns)
+# p(downColumns)
+
+# for t in range(19):
+#     print(t)
+#     printGrid(t)
+entry = [0,-1]
+exit = [columns-1,rows]
+# p(entry)
+# p(exit)
+
+total = 0
+result = doMinute(entry[0],entry[1],exit[0],exit[1],0)
+print(result)
+
+# total = 18
+resetMinuteCache()
+result = doMinute(exit[0],exit[1],entry[0],entry[1],result)
+print(result)
+
+
+resetMinuteCache()
+result = doMinute(entry[0],entry[1],exit[0],exit[1],result)
+print(result)

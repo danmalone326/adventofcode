@@ -1,0 +1,140 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def snafu2dec(s):
+    result = 0
+
+    power = 0
+    for i in reversed(range(len(s))):
+        c = s[i]
+        multiplier = pow(5,power)
+        if (c=='-'):
+            c = "-1"
+        elif (c=='='):
+            c = "-2"
+        n = int(c)
+        result += n * multiplier
+
+        power += 1
+    
+    return result
+
+def dec2snafu(d):
+    result = ""
+
+    if (d == 0):
+        result = "0"
+    else:
+        remaining = d
+        power = 0
+        while (remaining > 0):
+            # print("power: " + str(power))
+            thisMultiplier = pow(5,power)
+            # print("thisMultiplier: " + str(thisMultiplier))
+            nextMultiplier = pow(5,power+1)
+            # print("nextMultiplier: " + str(nextMultiplier))
+            remainder = remaining % nextMultiplier
+            # print("remainder: " + str(remainder))
+            digit = int(remainder / thisMultiplier)
+            # print("digit: " + str(digit))
+            if (digit < 3):
+                delta = 0-remainder
+            else:
+                delta = (5-digit) * thisMultiplier
+
+            # print("delta: " + str(delta))
+            remaining += delta
+            # print("remaining: " + str(remaining))
+            
+            c = str(digit).replace("3","=").replace("4","-")
+            result = c + result
+            # p(result)
+
+            power += 1
+
+
+    return result
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+s = "2=2="
+result = snafu2dec(s)
+print(s + ": " + str(result))
+back = dec2snafu(result)
+print(back)
+
+# exit()
+
+total = 0
+for s in input:
+    result = snafu2dec(s)
+    print(s + ": " + str(result))
+    back = dec2snafu(result)
+    print(back)
+    total += result
+
+print(total)
+sn = dec2snafu(total)
+print(sn)

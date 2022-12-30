@@ -1,0 +1,320 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+
+
+elves = []
+
+def newElf(x,y):
+    elf = {
+        "x": None,
+        "y": None,
+        "px": x,
+        "py": y
+    }
+    
+    return elf
+
+def initializeElves(input):
+    global elves
+    global elfRowList
+
+    elves = []
+    elfIndex = 0
+    y = 0
+    for line in input:
+        nextStart = 0
+        while (True):
+            x = line.find("#",nextStart)
+            if (x == -1):
+                break
+
+            elves.append(newElf(x,y))
+            elfUpdateLocation(elfIndex)
+
+            elfIndex +=1
+            nextStart = x+1
+        y += 1
+
+
+proposalOrder = ["N","S","W","E"]
+def rotateProposalOrder():
+    global proposalOrder
+    newOrder = proposalOrder[1:]
+    newOrder.append(proposalOrder[0])
+    proposalOrder = newOrder
+
+# list of elves who have proposed this round
+proposedList = []
+def clearProposedList():
+    global proposedList
+    proposedList = []
+
+def addProposedList(i):
+    proposedList.append(i)
+
+def onProposedList(i):
+    return (i in proposedList)
+
+elfRowList = {}
+def elfUpdateLocation(i):
+    global elves
+    global elfRowList
+
+    elf = elves[i]
+    x = elf["px"]
+    y = elf["py"]
+
+    # if y is changing, we need to update the row list
+    if (elf["y"] != y):
+        # first remove from previous row
+        if (elf["y"] is not None):
+            elfRowList[elf["y"]].remove(i)
+
+        # now add to the new row
+        if (not (y in elfRowList)):
+            elfRowList[y] = []
+        elfRowList[y].append(i)
+    
+    elf["x"] = x
+    elf["y"] = y
+
+def elfHere(x,y):
+    global elves
+
+    result = False
+    if (y in elfRowList):
+        for elfIndex in elfRowList[y]:
+            if ((elves[elfIndex]["x"] == x)):
+                result = True
+                break
+
+    return result
+
+def elfConsider(i):
+    global elves
+
+    elf = elves[i]
+
+    x=elf["x"]
+    y=elf["y"]
+    px = None
+    py = None
+
+    NW = elfHere(x-1,y-1)
+    N = elfHere(x,y-1)
+    NE = elfHere(x+1,y-1)
+    E = elfHere(x+1,y)
+    SE = elfHere(x+1,y+1)
+    S = elfHere(x,y+1)
+    SW = elfHere(x-1,y+1)
+    W = elfHere(x-1,y) 
+
+    if (NW or N or NE or
+        W     or   E  or
+        SW or S or SE):
+
+        for p in proposalOrder:
+            if (p == "N"):
+                if (not (NW or N or NE)):
+                    px = x
+                    py = y-1
+                    break
+            elif (p == "S"):
+                if (not (SW or S or SE)):
+                    px = x
+                    py = y+1
+                    break
+            elif (p == "W"):
+                if (not (NW or W or SW)):
+                    px = x-1
+                    py = y
+                    break
+            elif (p == "E"):
+                if (not (NE or E or SE)):
+                    px = x+1
+                    py = y
+                    break
+        elf["px"] = px
+        elf["py"] = py
+
+    if (px is not None):
+        addProposedList(i)
+
+def allElvesConsider():
+    global elves
+
+    clearProposedList()
+    for i in range(len(elves)):
+        elfConsider(i)
+
+
+def isDuplicateProposal(i):
+    global elves
+
+    foundDuplicate = False
+
+    px = elves[i]["px"]
+    py = elves[i]["py"]
+    for proposedIndex in range(len(proposedList)):
+        elfIndex = proposedList[proposedIndex]
+        # if already found duplicate (None) or don't compare to self
+        if ((elfIndex is None) or (elfIndex == i)):
+            continue
+
+        if ((elves[elfIndex]["px"] == px) and (elves[elfIndex]["py"] == py)):
+            foundDuplicate = True
+            proposedList[proposedIndex] = None
+
+    return foundDuplicate
+
+def elfMove(i):
+    global elves
+
+    result = False
+
+    if (not (isDuplicateProposal(i))):
+        elfUpdateLocation(i)
+        result = True
+
+    return result
+
+def allElvesMove():
+    moveCount = 0
+
+    for proposedIndex in range(len(proposedList)):
+        elfIndex = proposedList[proposedIndex]
+        if (elfIndex is not None):
+            if (elfMove(elfIndex)):
+                moveCount += 1
+    
+    return moveCount
+
+def doRound(roundNum = 0):
+    p("Starting round "+str(roundNum))
+    allElvesConsider()
+    p(str(len(proposedList)) + " elves proposed a move")
+    moveCount = allElvesMove()
+    p(str(moveCount) + " elves moved")
+    rotateProposalOrder()
+
+    return (len(proposedList) > 0)
+
+def emptyCount():
+    global elves
+
+    xMin = elves[0]["x"]
+    xMax = xMin
+    yMin = elves[0]["y"]
+    yMax = yMin
+    
+    for elf in elves:
+        xMin = min(xMin,elf["x"])
+        xMax = max(xMax,elf["x"])
+        yMin = min(yMin,elf["y"])
+        yMax = max(yMax,elf["y"])
+
+    count = ((xMax - xMin + 1) * (yMax - yMin +1)) - len(elves)
+    return count
+
+def drawElves():
+    global elves
+
+    xMin = elves[0]["x"]
+    xMax = xMin
+    yMin = elves[0]["y"]
+    yMax = yMin
+    
+    for elf in elves:
+        xMin = min(xMin,elf["x"])
+        xMax = max(xMax,elf["x"])
+        yMin = min(yMin,elf["y"])
+        yMax = max(yMax,elf["y"])
+
+    for y in range(yMin,yMax+1,1):
+        for x in range(xMin,xMax+1,1):
+            if (elfHere(x,y)):
+                print("#",end="")
+            else:
+                print(".",end="")
+        print("")
+    print("")
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+initializeElves(input)
+# p(elves)
+
+allElvesConsider()
+p(proposedList)
+
+drawElves()
+
+i = 1
+while (doRound(i)):
+    i += 1
+
+p(emptyCount())
+p(i)
