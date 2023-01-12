@@ -1,0 +1,163 @@
+#!/usr/bin/python3
+import time
+
+from process import *
+import math
+import numpy as np
+
+
+def part_1():
+    file_name = collect(year=2022, day=19)
+    data = word_and_numbers(file_name)
+    blue_prints = []
+    for line in data:
+        blue_prints.append({'id': line[1], 'ore_ore': line[6], 'clay_ore': line[12], 'obsidian_ore': line[18],
+                            'obsidian_clay': line[21], 'geode_ore': line[27], 'geode_obsidian': line[30]})
+    score = 0
+    i = 0
+    for blue_print in blue_prints:
+        i += 1
+        state = a_star(blue_print, 24)
+        score += state * blue_print['id']
+    print(f'Answer to day 19 part 1 is {score}')
+    return blue_prints
+
+
+def part_2(*data):
+    blue_prints = data[0]
+    score = 1
+    for blue_print in blue_prints[:3]:
+        state = a_star(blue_print, 32)
+        score *= state
+    print(f'Answer to 19 part 2: {score}')
+
+
+def a_star(blue_print, r):        
+    def cost(time, ore_bot, ore_num, clay_bot, clay_num, obsidian_bot, obsidian_num, geode_bot, geode_num):
+        while time <= r:
+            geode_num += geode_bot
+            if ore_num >= blue_print['geode_ore'] and obsidian_num > blue_print['geode_obsidian']:
+                geode_bot +=1
+                ore_num -= blue_print['geode_ore']
+                obsidian_num -= blue_print['geode_obsidian']
+                obsidian_num += obsidian_bot
+                ore_num += ore_bot
+            else:
+                obsidian_num += obsidian_bot
+                ore_num += ore_bot
+                obsidian_bot += 1
+                ore_bot += 1
+            time +=1
+        return -geode_num
+                    
+        
+        
+
+    max_ore = max([blue_print[item] for item in blue_print if '_ore' == item[-4:]])
+    max_clay = max([blue_print[item] for item in blue_print if '_clay' == item[-5:]])
+    max_obsidian = max([blue_print[item] for item in blue_print if '_obsidian' == item[-9:]])
+
+    time, ore_bot, ore_num, clay_bot, clay_num, obsidian_bot, obsidian_num, geode_bot, geode_num, order = 0, 1, 0, 0, 0, 0, 0, 0, 0, ''
+    queue = [(0, (time, ore_bot, ore_num, clay_bot, clay_num, obsidian_bot, obsidian_num, geode_bot, geode_num, order))]
+    heapq.heapify(queue)
+    visited = {}
+    while len(queue) > 0:
+        current = heapq.heappop(queue)
+        score, data = current
+        time, ore_bot, ore_num, clay_bot, clay_num, obsidian_bot, obsidian_num, geode_bot, geode_num, order = data
+
+        if time == r:
+            return current[1][-2]
+        fin = True
+        # geode step
+        if obsidian_bot > 0:
+            dt = max(int(math.ceil((blue_print['geode_obsidian']-obsidian_num)/obsidian_bot)),int(math.ceil((blue_print['geode_ore']-ore_num)/ore_bot)),0)+1
+            if time + dt <=r:
+                new_ore = ore_num + ore_bot * dt - blue_print['geode_ore']
+                new_clay = clay_num + clay_bot * dt 
+                new_obsidian = obsidian_num + obsidian_bot * dt- blue_print['geode_obsidian']
+                new_geode = geode_num + geode_bot * dt
+                if (time + dt, ore_bot, new_ore, clay_bot, new_clay, obsidian_bot , new_obsidian, geode_bot+1, new_geode) not in visited:
+                    heapq.heappush(queue, (
+                        cost(time + dt, ore_bot, new_ore, clay_bot, new_clay, obsidian_bot, new_obsidian, geode_bot+1,
+                             new_geode),
+                        (time + dt, ore_bot, new_ore, clay_bot, new_clay, obsidian_bot , new_obsidian, geode_bot+1, new_geode,
+                         order + '_obsidian')))
+                    visited[(time + dt, ore_bot, new_ore, clay_bot, new_clay, obsidian_bot , new_obsidian, geode_bot+1, new_geode)] = 0
+                    fin = False
+            # obsidian step
+        if clay_bot > 0 and obsidian_bot <= max_obsidian:
+            dt = max(int(math.ceil((blue_print['obsidian_clay']-clay_num)/clay_bot)),int(math.ceil((blue_print['obsidian_ore']-ore_num)/ore_bot)),0)+1
+            if time+dt <= r:
+                new_ore = ore_num + ore_bot*dt-blue_print['obsidian_ore']
+                new_clay =  clay_num +  clay_bot*dt - blue_print['obsidian_clay']
+                new_obsidian = obsidian_num + obsidian_bot * dt
+                new_geode = geode_num + geode_bot *dt
+                if (time+dt, ore_bot, new_ore, clay_bot, new_clay, obsidian_bot+1, new_obsidian, geode_bot, new_geode) not in visited:
+                    fin = False
+                    heapq.heappush(queue, (
+                            cost(time+dt, ore_bot, new_ore, clay_bot, new_clay, obsidian_bot+1, new_obsidian, geode_bot, new_geode),
+                            (time+dt, ore_bot, new_ore, clay_bot, new_clay, obsidian_bot+1, new_obsidian, geode_bot, new_geode,
+                             order + '_obsidian')))
+                    visited[(time+dt, ore_bot, new_ore, clay_bot, new_clay, obsidian_bot+1, new_obsidian, geode_bot, new_geode)] = 0
+        # clay step
+        if clay_bot <= max_clay:
+            dt = max(int(math.ceil((blue_print['clay_ore']-ore_num)/ore_bot)),0)+1
+            if time + dt <= r:
+                new_ore = ore_num + ore_bot * dt - blue_print['clay_ore']
+                new_clay = clay_num + clay_bot * dt
+                new_obsidian = obsidian_num + obsidian_bot * dt
+                new_geode = geode_num + geode_bot * dt
+                if (time + dt, ore_bot, new_ore, clay_bot+1, new_clay, obsidian_bot, new_obsidian, geode_bot ,
+                         new_geode) not in visited:
+                    heapq.heappush(queue, (
+                        cost(time + dt, ore_bot, new_ore, clay_bot+1, new_clay, obsidian_bot, new_obsidian, geode_bot ,
+                             new_geode),
+                        (time + dt, ore_bot, new_ore, clay_bot+1, new_clay, obsidian_bot, new_obsidian, geode_bot ,
+                         new_geode,
+                         order + '_obsidian')))
+                    fin = False
+                    visited[(time + dt, ore_bot, new_ore, clay_bot+1, new_clay, obsidian_bot, new_obsidian, geode_bot ,
+                         new_geode)] =0
+
+        time, ore_bot, ore_num, clay_bot, clay_num, obsidian_bot, obsidian_num, geode_bot, geode_num, order = data
+        if ore_bot <= max_ore:
+            dt = max(int(math.ceil((blue_print['ore_ore']-ore_num)/ore_bot)),0)+1
+            if time + dt <= r:
+                new_ore = ore_num + ore_bot * dt - blue_print['ore_ore']
+                new_clay = clay_num + clay_bot * dt
+                new_obsidian = obsidian_num + obsidian_bot * dt
+                new_geode = geode_num + geode_bot * dt
+                if (time + dt, ore_bot+1, new_ore, clay_bot, new_clay, obsidian_bot, new_obsidian, geode_bot,
+                         new_geode) not in visited:
+                    heapq.heappush(queue, (
+                        cost(time + dt, ore_bot+1, new_ore, clay_bot, new_clay, obsidian_bot, new_obsidian, geode_bot,
+                             new_geode),
+                        (time + dt, ore_bot+1, new_ore, clay_bot, new_clay, obsidian_bot, new_obsidian, geode_bot ,
+                         new_geode,
+                         order + '_obsidian')))
+                    fin = False
+                    visited[(time + dt, ore_bot+1, new_ore, clay_bot, new_clay, obsidian_bot, new_obsidian, geode_bot,
+                         new_geode)] =0
+
+        time, ore_bot, ore_num, clay_bot, clay_num, obsidian_bot, obsidian_num, geode_bot, geode_num, order = data
+        if fin:
+            while time < r:
+                time += 1
+                ore_num += ore_bot
+                clay_num += clay_bot
+                obsidian_num += obsidian_bot
+                geode_num += geode_bot
+            heapq.heappush(queue, (
+                cost(time, ore_bot, ore_num, clay_bot, clay_num, obsidian_bot, obsidian_num, geode_bot, geode_num), (
+                    time, ore_bot, ore_num, clay_bot, clay_num, obsidian_bot, obsidian_num, geode_bot, geode_num,
+                    order + '_done')))
+
+
+if __name__ == '__main__':
+    t_0 = time.perf_counter()
+    data = part_1()
+    t_1 = time.perf_counter()
+    part_2(data)
+    t_2 = time.perf_counter()
+    print(f'part 1: {t_1-t_0}, part 2: {t_2-t_1}, total {t_2-t_0}')

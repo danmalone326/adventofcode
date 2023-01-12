@@ -4,9 +4,15 @@ import fileinput
 import json
 import math
 import re
+import copy
 
 def p(obj):
     print(json.dumps(obj, indent=2))
+
+sysInput = input
+def waitKey():
+    # sysInput("Press enter to continue...")
+    pass
 
 def getInput():
     fileRows = []
@@ -73,6 +79,8 @@ def parseBlueprints(input):
         remainder = m.group(2)
         p(blueprint)
         this["number"] = blueprint
+        this["maxGeodes"] = 0
+        this["maxBuildOrder"] = None
 
 
         recipies = re.split(r'\. ', remainder.strip())
@@ -91,18 +99,210 @@ def parseBlueprints(input):
     
     return result
 
+ore = "ore"
+clay = "clay"
+obsidian = "obsidian"
+geode = "geode"
 
+robotPreference = [geode,obsidian,clay,ore]
+
+def initializeInventory(i):
+    global blueprints
+
+    inventory = {}
+
+    b = blueprints[i]
+
+    inventory = {
+        "robotCount": {
+            ore: 1,
+            clay: 0,
+            obsidian: 0,
+            geode: 0
+        },
+        "robotMax": {
+            ore: 0,
+            clay: 0,
+            obsidian: 0,
+            geode: 0
+        },
+        "resourceCount": {
+            ore: 0,
+            clay: 0,
+            obsidian: 0,
+            geode: 0
+
+        },
+        "buildOrder": [],
+    }
+
+    for robotKey in b["costs"]:
+        robot = b["costs"][robotKey]
+        for resourceKey in robot:
+            resource = robot[resourceKey]
+            inventory["robotMax"][resourceKey] = max(inventory["robotMax"][resourceKey],resource)
+    
+    return inventory
+
+def nextRobotList(blueprintNumber,inventory,currentTime):
+    global neededTime
+
+    result = {}
+    blueprint = blueprints[blueprintNumber]
+
+
+    # calculate time required to get enough resources for each type of robot
+    for robot in robotPreference:
+        # check if we already have the most we ever need for a round
+        if ((inventory["robotCount"][robot] >= inventory["robotMax"][robot]) and (inventory["robotMax"][robot] > 0)):
+            continue
+
+        # how much time to get enough resources
+        neededTime = 0
+        skipRobot = False
+        for resource in blueprint["costs"][robot]:
+            # if we don't have any of these robots yet, we can't make any resources
+            if (inventory["robotCount"][resource] == 0):
+                skipRobot = True
+                break
+
+            # cost = blueprint["costs"][robot][resource]
+            # thisTime = -((cost - inventory["resourceCount"][resource]) // (-inventory["robotCount"][resource]))
+
+            # # if this will put us past the end time
+            # if (currentTime+thisTime > endTime):
+            #     skipRobot = True
+            #     break
+
+            # neededTime = max(neededTime,thisTime)
+
+        if (not skipRobot):
+            result[robot] = neededTime
+
+    return result
+
+def doNextBuild(blueprintNumber,inventoryIn,nextBuild,currentTime):
+    global blueprints, endTime
+    blueprint = blueprints[blueprintNumber]
+
+    inventory = copy.deepcopy(inventoryIn)
+
+    if (nextBuild is None):
+        computeNextBuild = True
+    else:
+        computeNextBuild = False
+    
+    robotBuilt = False
+
+    # mine only steps to get to the new current step
+    # rounds = buildTime - currentTime - 1
+    # for resource in inventory["robotCount"]:
+    #     inventory["resourceCount"][resource] += inventory["robotCount"][resource] * rounds
+
+    # p(inventory)
+
+    # factory builds a robot
+    if (nextBuild is not None):
+        # check if we have resources to build
+        resourcesAvailable = True
+        for resource in blueprint["costs"][nextBuild]:
+            if (inventory["resourceCount"][resource] < blueprint["costs"][nextBuild][resource]):
+                resourcesAvailable = False
+         
+        if (resourcesAvailable):
+            # print("Building " + nextBuild + " robot.")
+            robotBuilt = True
+            computeNextBuild = True
+            for resource in blueprint["costs"][nextBuild]:
+                inventory["resourceCount"][resource] -= blueprint["costs"][nextBuild][resource]
+            # don't add the robot to inventory until after the current resource gathering
+
+    # mine for the current step
+    for resource in inventory["robotCount"]:
+        inventory["resourceCount"][resource] += inventory["robotCount"][resource]
+
+    if (robotBuilt):
+        inventory["robotCount"][nextBuild] += 1
+        inventory["buildOrder"].append({nextBuild: currentTime})
+
+    # print minute summary
+    # print("== Minute "+ str(currentTime) + " ==")
+    # print("Robot Count:")
+    # p(inventory["robotCount"])
+    # print("Resource Count:")
+    # p(inventory["resourceCount"])
+    
+
+
+    # check for end condition
+    if (currentTime == endTime):
+        thisGeodes = inventory["resourceCount"][geode]
+        # print("Found " + str(thisGeodes) + " geodes.")
+        # waitKey()
+        if (thisGeodes > blueprint["maxGeodes"]):
+            blueprint["maxGeodes"] = thisGeodes
+            blueprint["maxBuildOrder"] = copy.deepcopy(inventory["buildOrder"])
+
+    elif (theoreticalMaxGeodes(inventory,currentTime) <= blueprint["maxGeodes"]):
+        # print("not theoreticaly possible...")
+        # waitKey()
+        pass
+
+    elif (computeNextBuild):
+        # do next builds
+        nextBuilds = nextRobotList(blueprintNumber,inventory,currentTime)
+        # print("Next builds:")
+        # p(nextBuilds)
+        # waitKey()
+        if (len(nextBuilds) == 0):
+            doNextBuild(blueprintNumber,inventory,None,currentTime+1)
+        else:
+            for build in nextBuilds:
+                doNextBuild(blueprintNumber,inventory,build,currentTime+1)
+
+    else:
+        # print("continuing to mine...")
+        # waitKey()
+        doNextBuild(blueprintNumber,inventory,nextBuild,currentTime+1)
+    
+    # print("returning...")
+    
+    
+def theoreticalMaxGeodes(inventory,currentTime):
+    global endTime
+
+    remainingRounds = endTime - currentTime
+    result = inventory["resourceCount"][geode] + inventory["robotCount"][geode]*remainingRounds + int(remainingRounds * (remainingRounds + 1)/2)
+
+    return result
 
 input = getInput()
 
 # data = arrayFromGridOfDigits(input)
 # p(data)
 
-data = parseBlueprints(input)
+blueprints = parseBlueprints(input)
 
-p(data)
+p(blueprints)
 
-# per minute structure
-# * robot list
-# * resource list
-# * constructed robot
+inventory = initializeInventory(0)
+# p(inventory)
+
+endTime = 24
+
+maxGeodes = theoreticalMaxGeodes(inventory,0)
+p(maxGeodes)
+# p(nextRobotList(0,inventory,0))
+# inventory
+
+qualityTotal = 0
+for i in range(len(blueprints)):
+    p("blueprint: "+blueprints[i]["number"])
+    doNextBuild(i,inventory,None,1)
+    p(blueprints[i]["maxGeodes"])
+    p(blueprints[i]["maxBuildOrder"])
+    quality = int(blueprints[i]["number"]) * blueprints[i]["maxGeodes"]
+    qualityTotal += quality
+
+p("Answer:")
+p(qualityTotal)

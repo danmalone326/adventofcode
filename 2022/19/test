@@ -1,0 +1,15 @@
+#!/usr/bin/python3
+import time
+import random
+
+for i in range(40):
+    print("*",end="", flush=True)
+
+for i in range(40):
+    time.sleep(0.10)
+    if (random.randint(0, 1) == 0):
+        print("*",end="", flush=True)
+    else:
+        print("\b \b",end="", flush=True)
+
+print("")
