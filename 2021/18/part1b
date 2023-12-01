@@ -1,0 +1,237 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug = False
+debug2 = False
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def findNextNumber(line,startPos):
+    pos = startPos
+    while ((pos < len(line)) and (not line[pos].isnumeric())):
+        pos += 1
+    if (pos >= len(line)):
+        pos = None
+    return pos
+
+def findPreviousNumber(line,startPos):
+    pos = startPos
+    while ((pos >= 0) and (not line[pos].isnumeric())):
+        pos -= 1
+    if (pos < 0):
+        pos = None
+    else:
+        while (line[pos-1].isnumeric()):
+            pos -= 1
+    return pos
+
+def explode(line):
+    result = line
+    level = 0
+    for pos in range(len(line)):
+        char = line[pos]
+        if (char == '['):
+            level += 1
+        elif (char == ']'):
+            level -= 1
+        elif (char == ','):
+            pass
+        else:
+            if (level > 4):
+                m = re.match(r'^(\[(\d+)\,(\d+)\])',line[pos-1:])
+                if (m):
+                    if (debug2):
+                        print("explode:")
+                    # explode
+                    e = m.group(1)
+                    leftNumStr = m.group(2)
+                    rightNumStr = m.group(3)
+                    pre = line[:pos-1]
+                    post = line[pos-1+len(e):]
+                    # p(pre + " " + e + " " + post)
+                    # p(leftNumStr)
+                    # p(rightNumStr)
+
+                    prevNumPos = findPreviousNumber(pre,len(pre)-1)
+                    nextNumPos = findNextNumber(post,0)
+
+                    if (prevNumPos is not None): 
+                        m2 = re.match(r'^(\d+)\D',pre[prevNumPos:])
+                        prevNumStr = m2.group(1)
+                        pre = pre[:prevNumPos] + str(eval(prevNumStr +"+"+ leftNumStr)) + pre[prevNumPos+len(prevNumStr):]
+
+                    if (nextNumPos is not None):
+                        m3 = re.match(r'^(\d+)\D',post[nextNumPos:])
+                        nextNumStr = m3.group(1)
+                        post = post[:nextNumPos] + str(eval(nextNumStr +"+"+ rightNumStr)) + post[nextNumPos+len(nextNumStr):]
+
+                    result = pre + "0" + post
+                    # p(pre + "0" + post)
+                    # print("")
+                    break    
+
+    return result
+
+def split(line):
+    result = line
+    level = 0
+    for pos in range(len(line)):
+        char = line[pos]
+        if (char == '['):
+            level += 1
+        elif (char == ']'):
+            level -= 1
+        elif (char == ','):
+            pass
+        else:
+            if (line[pos:pos+2].isnumeric()):
+                if (debug2):
+                    print("split:")
+                # split
+                m = re.match(r'^(\d+)\D',line[pos:])
+                numStr = m.group(1)
+                num = int(numStr)
+                halfNum = num // 2
+                split = "[" + str(halfNum) + "," + str(halfNum + (num%2)) + "]"
+                result = line[:pos] + split + line[pos+len(numStr):]
+                # p(line[:pos] + split + line[pos+len(numStr):])
+                break
+
+    return result
+
+def reduceOnce(line):
+    result = explode(line)
+    if (result == line):
+        result = split(line)
+
+    return result
+
+def reduce(line):
+    newResult = line
+    oldResult = ""
+
+    while (newResult != oldResult):
+        if (debug2):
+            print(newResult)
+        oldResult = newResult
+        newResult = reduceOnce(oldResult)
+
+    return newResult
+
+def add(a,b):
+    if (debug2):
+        print("add:")
+    result = "[" + a + "," + b + "]"
+    # print(result)
+    return result
+
+def magnitude(a): 
+    result = None
+
+    if (isinstance(a, str)):
+        result = magnitude(eval(a))
+    elif (isinstance(a, int)):
+        result = a
+    else:
+        result = 3 * magnitude(a[0]) + 2 * magnitude(a[1])
+
+    return result
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+# print(input[0])
+# t = reduceOnce(input[0])
+# print(t)
+# sys.exit()
+
+sum = None
+for line in input:
+    # p(line)
+    if (sum is None):
+        sum = line
+    else: 
+        a = sum
+        b = line
+        sum = reduce(add(a,b))
+        if (debug):
+            print("")
+            print("  "+a)
+            print("+ "+b)
+            print("= "+sum)
+            print("")
+
+reduced = reduce(sum)
+p(reduced)
+
+mag = magnitude(reduced)
+p(mag)
+
+print("part b:")
+max2 = 0
+for i in range(len(input)):
+    a = input[i]
+    for j in range(i+1,len(input)):
+        b = input[j]
+        max2 = max(max2,magnitude(reduce(add(a,b))),magnitude(reduce(add(b,a))))
+
+print(max2)
