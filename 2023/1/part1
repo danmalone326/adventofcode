@@ -5,19 +5,8 @@ import json
 import math
 import re
 
-debug=True
 def p(obj):
-    if type(obj) in [str,int]:
-        print(obj)
-    else:
-        print(json.dumps(obj, indent=2))
-
-def pd(obj):
-    if debug:
-        p(obj)
-
-def wait():
-    input("Press Enter to continue...")
+    print(json.dumps(obj, indent=2))
 
 def getInput():
     fileRows = []
@@ -71,18 +60,50 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
-    return data
+digitMap = [
+    ["one","1"],
+    ["two","2"],
+    ["three","3"],
+    ["four","4"],
+    ["five","5"],
+    ["six","6"],
+    ["seven","7"],
+    ["eight","8"],
+    ["nine","9"],
+    ["zero","0"]
+]
+def replaceDigitStrings(str):
+    temp = ""
 
-debug = True
+    for i in range(len(str)):
+        strPart = str[i::]
+        if (re.match(r'^\d', strPart)):
+            temp += strPart[0]
+        else:        
+            for map in digitMap:
+                pattern = r'^' + re.escape(map[0])
+                if (re.match(pattern, strPart)):
+                    temp += map[1]
 
-sourceInput = getInput()
+    return temp
 
-# data = arrayFromGridOfDigits(sourceInput)
+input = getInput()
+# p(input)
+
+answer = 0
+for line in input:
+    mappedLine = replaceDigitStrings(line)
+    # p([line,mappedLine])
+    digits = re.findall('\d', mappedLine )
+    # p(digits)
+    cv = int(digits[0] + digits[-1])
+    # p(cv)
+    answer += cv
+
+p(answer)
+
+# data = arrayFromGridOfDigits(input)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
-
-p(1)
+# data = arrayOfIntFromCSV(input[0])
+# p(data)

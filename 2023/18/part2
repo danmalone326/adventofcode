@@ -1,0 +1,294 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+dirHexMap = {
+    "0": "R",
+    "1": "D",
+    "2": "L",
+    "3": "U"
+}
+
+part = 2 # 1 or 2
+def parseInput(input):
+    data = []
+    for line in input:
+        dir, stepsStr, rgb = line.split()
+
+        if part == 1:
+            steps = int(stepsStr)
+        else:
+            # for part2
+            dir = dirHexMap[rgb[7]]
+            steps = int(rgb[2:7],16)
+
+        this = {"dir": dir, "steps": steps, "rgb": rgb}
+        data.append(this)
+
+    return data
+
+
+
+def pGrid(grid):
+    for row in grid:
+        rowStr = ''.join(row)
+        pd(rowStr)
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+# pd(data)
+
+
+segments = {
+    "H": {},
+    "V": {}
+}
+
+x=0
+y=0
+maxX = x
+minX = x
+maxY = y
+minY = y
+
+for instruction in data:
+    x2 = x
+    y2 = y
+    dir = instruction["dir"]
+    steps = instruction["steps"]
+    if dir == "L":
+        x2 -= steps
+    elif dir == "R":
+        x2 += steps
+    elif dir == "U":
+        y2 -= steps
+    elif dir == "D":
+        y2 +=+ steps
+
+    if dir in ["L","R"]:
+        segmentType = "H"
+        segmentKey = y
+        point1 = [min(x,x2),y]
+        point2 = [max(x,x2),y]
+    elif dir in ["U","D"]:
+        segmentType = "V"
+        segmentKey = x
+        point1 = [x,min(y,y2)]
+        point2 = [x,max(y,y2)]
+
+    if segmentKey not in segments[segmentType]:
+        segments[segmentType][segmentKey] = []
+    segments[segmentType][segmentKey].append([point1, point2])
+
+    x = x2
+    y = y2
+
+    maxX = max(maxX,x)
+    minX = min(minX,x)
+    maxY = max(maxY,y)
+    minY = min(minY,y)
+
+# p(segments)
+
+# for each horizontal segment in order
+#   do horizontal segment row
+#   if next row is not a horizontal segment row
+#     do row immediately after horizontal segment row 
+#     multiply this row times distance to next horizontal segment row
+# 
+# do horizontal segment row
+#   start outside 
+#   for each vertical segment
+#     if vertical segment is on on this row
+#       if horizontal segment not on this point
+#           flip inside/outside until next vertical segment
+#       if horizontal segment IS not on this point
+#         record if current segment is up or down
+#         record previous inside/outside
+#           count as inside until next vertical segment that touches this horizontal segment
+#           if up/down is same, inside/outside is same as previous
+#           if up/down is different, swap inside/outside
+
+def getVerticalSegmentsIntersectingRow(rowNum):
+    result = []
+    for columnNum in sorted(segments['V'].keys()):
+        for segment in segments['V'][columnNum]:
+            if segment[0][1] <= rowNum <= segment[1][1]:
+                result.append(segment)
+    return result
+
+def getHorizontalSegmentsIntersectingRow(rowNum):
+    if rowNum in segments['H']:
+        result = segments['H'][rowNum]
+    else:
+        result = []
+    return result
+
+def getNextVerticalSegment(verticalSegments, currentColumn=None, first=False):
+    if first:
+        minColumn = -sys.maxsize - 1
+    else:
+        minColumn = currentColumn
+    nextLowestColumn = sys.maxsize
+    nextVerticalSegment = None
+    for segment in verticalSegments:
+        if minColumn < segment[0][0] < nextLowestColumn:
+            nextLowestColumn = segment[0][0]
+            nextVerticalSegment = segment
+
+    return nextVerticalSegment
+
+def findBeginningHorizontalSegment(column,horizontalSegments):
+    result = None
+    for segment in horizontalSegments:
+        if (segment[0][0] == column):
+            result = segment
+            break
+    return result
+
+def countRowInside(rowNum):
+    insideCount = 0
+    verticalSegments = getVerticalSegmentsIntersectingRow(rowNum)
+    horizontalSegments = getHorizontalSegmentsIntersectingRow(rowNum)
+
+    currentlyInside = False
+    currentVerticalSegment = getNextVerticalSegment(verticalSegments,first=True)
+
+    while currentVerticalSegment is not None:
+        currentColumn = currentVerticalSegment[0][0]
+        nextVerticalSegment = getNextVerticalSegment(verticalSegments,currentColumn)
+        if nextVerticalSegment is not None:
+            nextColumn = nextVerticalSegment[0][0]
+
+        # p((currentColumn, currentVerticalSegment, nextVerticalSegment))
+
+        horizontalSegment = findBeginningHorizontalSegment(currentColumn, horizontalSegments)
+        # need special case for horizontal segment here
+        if (horizontalSegment is not None):
+            insideCount += nextColumn - currentColumn
+
+            # check if both endpoint are both top or bottom of the vertical segments
+            verticalsSameDirection = ((currentVerticalSegment[0][1] == nextVerticalSegment[0][1]) or
+                                      (currentVerticalSegment[1][1] == nextVerticalSegment[1][1]))
+            # if they are the same direction, flip this to make the next part right.
+            if verticalsSameDirection:
+                currentlyInside = not currentlyInside
+
+        else:
+            if currentlyInside:
+                insideCount += 1
+                currentlyInside = False
+            else:
+                insideCount += nextColumn - currentColumn
+                currentlyInside = True
+
+        currentVerticalSegment = nextVerticalSegment
+
+    return insideCount
+
+totalCount = 0
+
+sortedRowsWithHorizontalSegments = sorted(segments['H'].keys())
+for rowNumIndex in range(len(sortedRowsWithHorizontalSegments)):
+    rowNum = sortedRowsWithHorizontalSegments[rowNumIndex]
+    # pd("rowNum: {}".format(rowNum))
+
+    count = countRowInside(rowNum)
+    # pd("count: {}".format(count))
+    totalCount += count
+
+    try:
+        nextRowNum = sortedRowsWithHorizontalSegments[rowNumIndex + 1]
+        # pd("nextRowNum: {}".format(nextRowNum))
+
+        similarRowCount = nextRowNum - rowNum - 1
+        # pd("similarRowCount: {}".format(similarRowCount))
+        if similarRowCount > 0:
+            count = countRowInside(rowNum+1)
+            # pd("count: {}".format(count))
+
+            totalCount += similarRowCount * count
+    except IndexError:
+        pass # catches final row case
+
+p(totalCount)
+
+# p(getHorizontalSegmentsIntersectingRow(5))
+
+
+# p(count)

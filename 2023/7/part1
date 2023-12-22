@@ -5,19 +5,8 @@ import json
 import math
 import re
 
-debug=True
 def p(obj):
-    if type(obj) in [str,int]:
-        print(obj)
-    else:
-        print(json.dumps(obj, indent=2))
-
-def pd(obj):
-    if debug:
-        p(obj)
-
-def wait():
-    input("Press Enter to continue...")
+    print(json.dumps(obj, indent=2))
 
 def getInput():
     fileRows = []
@@ -71,18 +60,58 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
+cardRank = "AKQJT98765432"
+
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = []
+    for line in input:
+        cards,bid = line.split()
+        counts = {}
+        for card in cards:
+            if card in counts:
+                counts[card] += 1
+            else:
+                counts[card] = 1
+        
+        keyCount = len(counts.keys())
+        maxCount = sorted([counts[k] for k in counts.keys()], reverse=True)[0]
+        # p((cards,counts,keyCount,maxCount))
+
+        if keyCount == 1:
+            type = 0
+        elif keyCount == 2:
+            if (maxCount == 4):
+                type = 1
+            else:
+                type = 2
+        elif keyCount == 3:
+            if (maxCount == 3):
+                type = 3
+            else:
+                type = 4
+        else:
+            type = keyCount + 1
+
+        sortOrder = chr(type+65) + "".join([chr(cardRank.find(x)+65) for x in cards])
+
+        data.append({"cards": cards, "bid": bid, "type": type, "sortOrder": sortOrder})
     return data
 
-debug = True
+input = getInput()
 
-sourceInput = getInput()
-
-# data = arrayFromGridOfDigits(sourceInput)
+# data = arrayFromGridOfDigits(input)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+data = parseInput(input)
+p(data)
 
-p(1)
+ranked = sorted(data, key=lambda x: x["sortOrder"], reverse=True)
+p(ranked)
+
+totalWinnings = 0
+rank=0
+for hand in ranked:
+    rank += 1
+    totalWinnings += rank * int(hand["bid"])
+
+p(totalWinnings)

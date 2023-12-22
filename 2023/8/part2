@@ -1,0 +1,175 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = {}
+    data["map"] = input[0]
+
+    nodes = {}
+    for node in input[2:]:
+        nodeName, leftPath, rightPath = re.sub(r"[^\w ]+","",node).split()
+        thisNode = {"L": leftPath, "R": rightPath}
+        nodes[nodeName] = thisNode
+
+    data["nodes"] = nodes
+
+    return data
+
+def takeNextStep(data,currentNode,step):
+    nextNode = data["nodes"][currentNode][data["map"][step%len(data["map"])]]
+    return nextNode
+
+def findPattern(data,startNode):
+    exits = []
+    mapLen = len(data["map"])
+
+    node = startNode
+    step = 0
+
+    patternFound = False
+    while (not patternFound):
+        if (node[-1] == "Z"):
+            thisExit = {"node": node, "step": step, "stepMod": step%mapLen}
+            exits.append(thisExit)
+            # pd(thisExit)
+
+        node = takeNextStep(data,node,step)
+        step += 1
+
+        # now check for repeating
+        for i in range(len(exits)):
+            if (step%mapLen == exits[i]["stepMod"] and node == exits[i]["node"]):
+                patternFound = True
+                exits.append({"node": node, "step": step, "stepMod": step%mapLen})
+
+    return exits
+
+
+debug = True
+
+input = getInput()
+
+data = parseInput(input)
+# pd(data)
+pd("mapLength: " + str(len(data["map"])))
+
+paths = []
+for node in data["nodes"].keys():
+    if node[-1] == "A":
+        thisPath = {"start": node}
+        paths.append(thisPath)
+
+# pd(paths)
+
+smallestRepeat = sys.maxsize
+smallestRepeatPath = None
+for path in paths:
+    startNode = path["start"]
+    # pd(startNode)
+    exits = findPattern(data,startNode)
+    pd(exits)
+    path["exits"] = len(exits)
+    path["first"] = exits[0]["step"]
+    path["every"] = exits[-1]["step"] - exits[0]["step"]
+    if path["every"] < smallestRepeat:
+        smallestRepeat = path["every"]
+        smallestRepeatPath = path
+    pd(path)
+
+
+stepList = [path["every"] for path in paths]
+
+lcm=1
+for i in stepList:
+    lcm = lcm*i//math.gcd(lcm, i)
+
+steps = lcm
+
+
+# pd("stepping")
+# found = False
+# i = 0
+# steps = 0
+# while not found:
+#     # pd("i = " + str(i))
+#     steps = smallestRepeatPath["first"] + i * smallestRepeatPath["every"]
+#     # pd(steps)
+
+#     found = True
+#     for path in paths:
+#         # pd(path)
+#         # pd(steps - path["first"])
+#         # pd((steps - path["first"])%path["every"])
+#         if not ((steps - path["first"])%path["every"] == 0):
+#             found = False
+#             break
+
+#     i += 1
+
+# p(paths)
+p(steps)
+p(steps/smallestRepeat)

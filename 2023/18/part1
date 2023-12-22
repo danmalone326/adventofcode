@@ -1,0 +1,295 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = []
+    for line in input:
+        dir, stepsStr, rgb = line.split()
+        this = {"dir": dir, "steps": int(stepsStr), "rgb": rgb}
+        data.append(this)
+
+    return data
+
+emptyCell = '.'
+outsideCell = 'O'
+
+def setGrid(pos,char):
+    grid[pos[1]][pos[0]] = char
+
+def getGrid(pos):
+    try:
+        result = grid[pos[1]][pos[0]]
+    except IndexError: 
+        result = emptyCell
+    return result
+
+def move(pos,dir):
+    if dir == 'L':
+        newPos=[pos[0]-1,pos[1]]
+    elif dir == 'R':
+        newPos=[pos[0]+1,pos[1]]
+    elif dir == 'U':
+        newPos=[pos[0],pos[1]-1]
+    elif dir == 'D':
+        newPos=[pos[0],pos[1]+1]
+        
+    return newPos
+
+# Mapping is previous direction, previous outside direction, next direction -> next outside direction
+nextOutDirMap = {
+    'RUU': 'L',
+    'RUD': 'R',
+    'RDU': 'R',
+    'RDD': 'L',
+    'LUU': 'R',
+    'LUD': 'L',
+    'LDU': 'L',
+    'LDD': 'R',
+    'URR': 'D',
+    'URL': 'U',
+    'ULR': 'U',
+    'ULL': 'D',
+    'DRR': 'U',
+    'DRL': 'D',
+    'DLR': 'D',
+    'DLL': 'U'
+}
+
+
+def nextOutDir(prevDir,prevOutDir,nextDir):
+    key = prevDir + prevOutDir + nextDir
+    return nextOutDirMap[key]
+
+def paintIfEmpty(pos,char):
+    if getGrid(pos) == emptyCell:
+        setGrid(pos,char)
+
+def paintOutside(pos,outDir):
+    tempPos = move(pos,outDir)
+    paintIfEmpty(tempPos,outsideCell)
+
+
+def findOutsideEdge():
+    found = False
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if getGrid([x,y]) != emptyCell:
+                pos = [x,y]
+                outDir = 'L'
+                found = True
+                break
+        if found:
+            break
+
+    return pos,outDir
+
+def countGrid():
+    count = 0
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            try:
+                count += int(getGrid([x,y]))
+            except ValueError:
+                pass
+
+    return count
+
+def pGrid(grid):
+    for row in grid:
+        rowStr = ''.join(row)
+        pd(rowStr)
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+# pd(data)
+
+x=0
+y=0
+maxX = x
+minX = x
+maxY = y
+minY = y
+
+for instruction in data:
+    dir = instruction["dir"]
+    steps = instruction["steps"]
+    if dir == "L":
+        x -= steps
+    elif dir == "R":
+        x += steps
+    elif dir == "U":
+        y -= steps
+    elif dir == "D":
+        y += steps
+
+    maxX = max(maxX,x)
+    minX = min(minX,x)
+    maxY = max(maxY,y)
+    minY = min(minY,y)
+
+# adding 3 for some buffer
+dX = maxX - minX + 3
+dY = maxY - minY + 3
+
+startX = 0 - minX + 1
+startY = 0 - minY + 1
+
+
+p([(minX,minY),(maxX,maxY),(dX,dY),(startX,startY)])
+
+grid = []
+for y in range(dY):
+    thisRow = []
+    for x in range(dX):
+        thisRow.append(emptyCell)
+    grid.append(thisRow)
+
+pos = [startX,startY]
+setGrid(pos,"1")
+p(pos)
+
+for instruction in data:
+    dir = instruction["dir"]
+    steps = instruction["steps"]
+    for i in range(steps):
+        pos = move(pos,dir)
+        setGrid(pos,"1")
+
+p(pos)
+
+
+# first find an edge
+edgePos,outDir = findOutsideEdge()
+
+pos = [startX,startY]
+drawing = False
+done = False
+dir = ''
+# need to make 2 passes, first to find the edge staring point
+# second to get a full loop
+for pp in range(2):
+    for instruction in data:
+        prevDir = dir
+        dir = instruction["dir"]
+        steps = instruction["steps"]
+
+        if drawing:
+            outDir = nextOutDir(prevDir,outDir,dir)
+            paintOutside(pos,outDir)
+
+        for i in range(steps):
+            pos = move(pos,dir)
+
+            if (pos[0] == edgePos[0] and pos[1] == edgePos[1]):
+                if drawing:
+                    done = True
+                    break
+                drawing = True
+            
+            if drawing:
+                paintOutside(pos,outDir)
+        
+        if done:
+            break
+
+
+# Now fill in the 1s
+passes = 0
+foundChanges = True
+while (foundChanges):
+    passes += 1
+    foundChanges = False
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if getGrid([x,y]) == emptyCell:
+                if "1" in [
+                        getGrid([x-1,y]),
+                        getGrid([x+1,y]),
+                        getGrid([x,y-1]),
+                        getGrid([x,y+1])]:
+                    setGrid([x,y],"1")
+                    foundChanges = True
+
+    
+# pGrid(grid)
+
+
+count = countGrid()
+
+p(count)

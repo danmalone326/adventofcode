@@ -1,0 +1,205 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = input
+    return data
+
+def computeSingleLoad(str):
+    maxLoad = len(str)
+    totalLoad = 0
+    for i in range(len(str)):
+        if str[i] == 'O':
+            totalLoad += maxLoad - i
+    
+    return totalLoad
+
+def computeLoad(data):
+    totalLoad = 0
+    # for each column
+    for i in range(len(data[0])):
+        thisStr = ""
+        # for each row
+        for j in range(len(data)):
+            thisStr += data[j][i]
+        thisLoad = computeSingleLoad(thisStr)
+        totalLoad += thisLoad
+    return totalLoad
+        
+def rollSingle(str):
+    newStr = ""
+    for i in range(len(str)):
+        if str[i] == 'O':
+            newStr += 'O'
+        elif str[i] == '#':
+            newStr += '.'*(i-len(newStr)) + '#'
+    newStr += '.'*(len(str)-len(newStr))
+    
+    return newStr
+
+def rollNorthSouth(grid,dir = "N"):
+    # for each column
+    for i in range(len(grid[0])):
+        thisStr = ""
+        # for each row
+        for j in range(len(grid)):
+            thisStr += grid[j][i]
+
+        if dir=="S":
+            thisStr = thisStr[::-1]
+        # pd("")
+        # pd(thisStr)
+        newStr = rollSingle(thisStr)
+        # pd(newStr)
+        if dir=="S":
+            newStr = newStr[::-1]
+
+        for j in range(len(grid)):
+            grid[j] = grid[j][:i] + newStr[j] + grid[j][i+1:]
+
+        # pd(grid)
+
+    return grid
+
+def rollEastWest(grid,dir = "W"):
+    # for each row
+    for j in range(len(grid)):
+        thisStr = grid[j]
+
+        if dir=="E":
+            thisStr = thisStr[::-1]
+        # pd("")
+        # pd(thisStr)
+        newStr = rollSingle(thisStr)
+        # pd(newStr)
+        if dir=="E":
+            newStr = newStr[::-1]
+
+        grid[j] = newStr
+
+        # pd(grid)
+
+    return grid
+
+def roll(grid,dir = "N"):
+    if dir in ["N","S"]:
+        return rollNorthSouth(grid,dir)
+    else:
+        return rollEastWest(grid,dir)
+    
+def gridHash(grid):
+    thisHash = hash("".join(grid))
+    return thisHash
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+pd(data)
+
+cycles = 1000000000
+history = []
+dirs = ["N","W","S","E"]
+lastHash = 0
+found = False
+for i in range(cycles):
+    # p(i)
+    for dir in dirs:
+        data = roll(data,dir)
+    thisHash = gridHash(data)
+    thisLoad = computeLoad(data)
+    # p(thisHash)
+
+    for j in reversed(range(len(history))):
+        if thisHash == history[j][0]:
+            found = True
+            repeatStart = j
+            repeatLength = i-j
+
+    if found:
+        break
+    else:
+        history.append([thisHash,thisLoad])
+
+pd(data)
+
+pd([repeatStart,repeatLength])
+
+num = cycles - repeatStart - 1
+remain = num % repeatLength
+result = history[repeatStart + remain][1]
+
+p(history)
+
+p(result)

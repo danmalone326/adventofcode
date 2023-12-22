@@ -1,0 +1,127 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+cardRank = "AKQT98765432J"
+
+def parseInput(input):
+    data = []
+    for line in input:
+        cards,bid = line.split()
+        counts = {}
+        for card in cards:
+            if card in counts:
+                counts[card] += 1
+            else:
+                counts[card] = 1
+        
+        if ("J" in counts.keys()):
+            jCount = counts["J"]
+            del counts["J"]
+        else:
+            jCount = 0
+
+        keyCount = len(counts.keys())
+        if (jCount == 5):
+            keyCount = 1
+            maxCount = 5
+        else:
+            maxCount = sorted([counts[k] for k in counts.keys()], reverse=True)[0] + jCount
+        # p((cards,counts,keyCount,maxCount))
+
+        if keyCount == 1:
+            type = 0
+        elif keyCount == 2:
+            if (maxCount == 4):
+                type = 1
+            else:
+                type = 2
+        elif keyCount == 3:
+            if (maxCount == 3):
+                type = 3
+            else:
+                type = 4
+        else:
+            type = keyCount + 1
+
+        sortOrder = chr(type+65) + "".join([chr(cardRank.find(x)+65) for x in cards])
+
+        data.append({"cards": cards, "bid": bid, "type": type, "sortOrder": sortOrder})
+    return data
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseInput(input)
+p(data)
+
+ranked = sorted(data, key=lambda x: x["sortOrder"], reverse=True)
+p(ranked)
+
+totalWinnings = 0
+rank=0
+for hand in ranked:
+    rank += 1
+    totalWinnings += rank * int(hand["bid"])
+
+p(totalWinnings)

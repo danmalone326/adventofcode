@@ -1,0 +1,146 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def getChar(data,x,y):
+    if (x<0 or y<0 or x>=len(data[0]) or y>=len(data)):
+        char = "."
+    else:
+        char = data[y][x]
+    
+    return char
+
+def isSymbol(data,x,y):
+    result = True
+    char = getChar(data,x,y)
+    if (char.isdigit() or (char == '.')):
+        result = False
+    return result
+
+def getNumbers(data):
+    numbers = []
+
+    pattern = re.compile(r'\d+')
+    for y in range(len(data)):
+        matches = pattern.finditer(data[y])
+        results = [(match.group(), match.start(), match.end()) for match in matches]
+        for number, start, end in results:
+            this = {"number": int(number), "x": start, "y": y, "len": end-start, "symbols": []}
+            numbers.append(this)
+                        
+    return numbers
+
+def getSymbols(data):
+    symbols = []
+
+    pattern = re.compile(r'[^\d.]')
+    for y in range(len(data)):
+        matches = pattern.finditer(data[y])
+        results = [(match.group(), match.start(), match.end()) for match in matches]
+        for symbol, start, end in results:
+            this = {"symbol": symbol, "x": start, "y": y, "numbers": []}
+            symbols.append(this)
+                        
+    return symbols   
+
+def connectNumbersAndSymbols(numbers,symbols):
+    
+    for number in numbers:
+        x1 = number["x"]-1
+        x2 = number["x"]+number["len"]
+        y1 = number["y"]-1
+        y2 = number["y"]+1
+
+        for symbol in symbols:
+            if (x1 <= symbol["x"] <= x2) and (y1 <= symbol["y"] <= y2):
+                number["symbols"].append(symbol)
+                symbol["numbers"].append(number)
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = input
+# p(data)
+
+numbers = getNumbers(data)
+# p(numbers)
+
+symbols = getSymbols(data)
+# p(symbols)
+
+connectNumbersAndSymbols(numbers,symbols)
+
+sum=0
+for number in numbers:
+    if len(number["symbols"]) > 0:
+        sum += number["number"]
+
+p(sum)
+
+ratioSum = 0
+for symbol in symbols:
+    if (symbol["symbol"] == "*") and (len(symbol["numbers"]) == 2):
+        ratio = symbol["numbers"][0]["number"] * symbol["numbers"][1]["number"]
+        ratioSum += ratio
+
+p(ratioSum)

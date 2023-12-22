@@ -1,0 +1,151 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    grids = [] 
+    thisGrid = []
+    for line in input:
+        if line.strip() == "":
+            grids.append(thisGrid)
+            thisGrid = []
+        else:
+            thisGrid.append(line)
+    
+    if len(thisGrid) > 0:
+        grids.append(thisGrid)
+
+    return grids
+
+def findMirror(strPatternList):
+    result = 0
+    lineCount = len(strPatternList)
+    splitPoint = (lineCount-1)/2.0
+    pd("splitPoint: "+ str(splitPoint))
+
+    for i in range(lineCount-1):
+        pd("#")
+        pd("i: " + str(i))
+        found = True
+        if i < splitPoint:
+            r = i+1
+        else:
+            r = lineCount - i - 1
+        pd("r: "+ str(r))
+
+        for j in range(r):
+            pd("j: "+ str(j))
+            a = i - j
+            b = i+1 + j
+            pd("a: "+ str(a))
+            pd("b: "+ str(b))
+            pd(strPatternList[a])
+            pd(strPatternList[b])
+            if strPatternList[a] != strPatternList[b]:
+                found = False
+                break
+
+        if found:
+            result = i + 1
+            break
+
+    return result
+
+def rotateGrid(grid):
+    newGrid = []
+    for i in range(len(grid[0])):
+        newRow = ""
+        for j in range(len(grid)):
+            newRow += grid[j][i]
+
+        newGrid.append(newRow)
+    
+    return newGrid
+
+def processGrid(grid):
+    result = findMirror(grid)
+    if result == 0:
+        result += findMirror(rotateGrid(grid))
+    else:
+        result *= 100
+
+    return result
+
+debug = False
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseInput(input)
+pd(data)
+
+total = 0
+for grid in data:
+    total += processGrid(grid)
+
+p(total)

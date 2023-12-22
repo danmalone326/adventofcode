@@ -7,17 +7,11 @@ import re
 
 debug=True
 def p(obj):
-    if type(obj) in [str,int]:
-        print(obj)
-    else:
-        print(json.dumps(obj, indent=2))
+    print(json.dumps(obj, indent=2))
 
 def pd(obj):
     if debug:
         p(obj)
-
-def wait():
-    input("Press Enter to continue...")
 
 def getInput():
     fileRows = []
@@ -72,17 +66,38 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = {}
+    data["map"] = input[0]
+
+    nodes = {}
+    for node in input[2:]:
+        nodeName, leftPath, rightPath = re.sub(r"[^\w ]+","",node).split()
+        thisNode = {"L": leftPath, "R": rightPath}
+        nodes[nodeName] = thisNode
+
+    data["nodes"] = nodes
+
     return data
+
+def takeNextStep(data,currentNode,step):
+    nextNode = data["nodes"][currentNode][data["map"][step%len(data["map"])]]
+    return nextNode
 
 debug = True
 
-sourceInput = getInput()
+input = getInput()
 
-# data = arrayFromGridOfDigits(sourceInput)
-# p(data)
-
-data = parseInput(sourceInput)
+data = parseInput(input)
 pd(data)
 
-p(1)
+step = 0
+maxStep = 100000
+
+currentNode = "AAA"
+destinationNode = "ZZZ"
+while (currentNode != destinationNode and step <= maxStep):
+    currentNode = takeNextStep(data,currentNode,step)
+    step += 1
+
+p(currentNode)
+p(step)

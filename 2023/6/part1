@@ -5,19 +5,8 @@ import json
 import math
 import re
 
-debug=True
 def p(obj):
-    if type(obj) in [str,int]:
-        print(obj)
-    else:
-        print(json.dumps(obj, indent=2))
-
-def pd(obj):
-    if debug:
-        p(obj)
-
-def wait():
-    input("Press Enter to continue...")
+    print(json.dumps(obj, indent=2))
 
 def getInput():
     fileRows = []
@@ -71,18 +60,50 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
-    return data
+def waysToWinCount(t,record):
+    count = 0
+    for x in range(t+1):
+        d = (t*x) - (x*x)
+        if d>record:
+            count += 1
 
-debug = True
+    return count
 
-sourceInput = getInput()
+def waysToWinCount2(t,record):
+    count = 0
 
-# data = arrayFromGridOfDigits(sourceInput)
+    rt = math.sqrt(t ** 2 - 4 * record)
+
+    low = (t - rt)/2
+    high = (t + rt)/2
+    
+
+    count = math.floor(high) - math.ceil(low) + 1
+
+    return count
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+# data = arrayOfIntFromCSV(input[0])
 
-p(1)
+times = [int(x) for x in input[0].split(":")[1].split()]
+distance = [int(x) for x in input[1].split(":")[1].split()]
+data = [[times[i],distance[i]] for i in range(len(times))]
+p(data)
+
+# margin = 1
+# for d in data:
+#     c = waysToWinCount(d[0],d[1])
+#     margin *= c
+
+# p(margin)
+
+# c = waysToWinCount(int(input[0].split(":")[1].replace(" ","")),int(input[1].split(":")[1].replace(" ","")))
+# p(c)
+
+c = waysToWinCount2(int(input[0].split(":")[1].replace(" ","")),int(input[1].split(":")[1].replace(" ","")))
+p(c)

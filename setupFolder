@@ -1,0 +1,19 @@
+#!/usr/bin/bash
+
+scriptDir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo $scriptDir
+
+echo $1
+
+newPath=$scriptDir/$1
+
+echo $newPath
+
+mkdir -p $newPath
+
+if [ ! -e $newPath/part1 ]; then
+    cp $scriptDir/partTemplate $newPath/part1
+fi
+touch $newPath/testInput
+touch $newPath/input

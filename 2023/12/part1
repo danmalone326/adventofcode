@@ -1,0 +1,183 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+operationalChar = 'o'
+damagedChar = 'D'
+wildcardChar = '.'
+
+def parseInput(input):
+    data = []
+    for line in input:
+        a,b = line.split()
+        data.append([
+            a.replace('.',operationalChar).replace('#',damagedChar).replace('?',wildcardChar),
+            [int(x) for x in b.split(',')]
+            ])
+    return data
+
+def buildRegex(str):
+    result = str.replace(".","\.").replace("?",".")
+    return result
+
+# Cache will be by groups (csv) and then by pattern
+# e.g. lookupCache["1,3"]["?.###"] = 1
+lookupCache = {}
+def clearLookupCache():
+    global lookupCache
+    lookupCache = {}
+
+def setLookupCache(pattern,groups,value):
+    global lookupCache
+    groupsStr = ','.join(str(x) for x in groups)
+    if groupsStr not in lookupCache:
+        lookupCache[groupsStr] = {}
+    lookupCache[groupsStr][pattern] = value
+
+def getLookupCache(pattern,groups):
+    global lookupCache
+    groupsStr = ','.join(str(x) for x in groups)
+    try:
+        result = lookupCache[groupsStr][pattern]
+    except KeyError:
+        result = None
+    return result
+
+
+def countPossibilities(pattern,groups):
+    # first check if we've done this before
+    cached = getLookupCache(pattern,groups)
+    if cached is not None:
+        return cached
+    
+    thisCount = 0
+
+    # first check if these groups can fit
+    if len(pattern) >= (sum(groups) + len(groups) - 1):
+
+
+        thisGroup = groups[0]
+        remainingGroups = groups[1:]
+        # this does not include a leading seperator
+        remainingGroupsMinSpace = sum(remainingGroups) + len(remainingGroups) - 1
+        pd((thisGroup,remainingGroups,remainingGroupsMinSpace))
+
+        # this accounts for a trailing seperator
+        thisPossiblePositions = len(pattern) - remainingGroupsMinSpace - thisGroup
+        # if no more groups, a trailing seperator is not needed
+        # if len(remainingGroups) == 0:
+        #     thisPossiblePositions += 1
+        pd(thisPossiblePositions)
+
+        if thisPossiblePositions > 0:
+            # loop through the possibilities for this group
+            for i in range(thisPossiblePositions):
+                thisSolution = operationalChar*i + damagedChar*thisGroup
+                if len(remainingGroups) == 0:
+                    thisSolution += operationalChar*(len(pattern)-len(thisSolution))
+                else:
+                    thisSolution += operationalChar
+
+                thisPattern = pattern[:len(thisSolution)]
+
+                pd((thisSolution,thisPattern))
+                match = re.match(thisPattern,thisSolution)
+                if match:
+                    if len(remainingGroups) == 0:
+                        thisCount += 1
+                    else:
+                        remainingPatern = pattern[len(thisSolution):]
+                        thisCount += countPossibilities(remainingPatern,remainingGroups)
+
+    setLookupCache(pattern,groups,thisCount)
+    return thisCount
+
+
+
+
+debug = False
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseInput(input)
+# pd(data)
+
+totalCount = 0
+for test in data: #[-1:]:
+    clearLookupCache()
+    count = countPossibilities(test[0],test[1])
+    # p(count)
+    totalCount += count
+
+p(totalCount)
+
+

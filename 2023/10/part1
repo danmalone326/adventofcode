@@ -1,0 +1,209 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = input
+    return data
+
+def findStart(data):
+    for y in range(len(data)):
+        x = data[y].find('S')
+        if x>=0:
+            break
+
+    return [x, y]
+
+def setPos(grid,pos,value):
+    if (0 <= pos[0] < len(grid[0])) and (0 <= pos[1] < len(grid)):
+        grid[pos[1]][pos[0]] = value
+    else:
+        pd('out of range.')
+        pd((pos,value,(len(grid[0]),len(grid))))
+
+def getPos(grid,pos):
+    result = None
+    if (0 <= pos[0] < len(grid[0])) and (0 <= pos[1] < len(grid)):
+        result = grid[pos[1]][pos[0]]
+    return result
+
+def move(pos,dir):
+    newPos = [pos[0],pos[1]]
+    if (dir == "N"):
+        newPos[1] -= 1
+    elif (dir == "S"):
+        newPos[1] += 1
+    elif (dir == "E"):
+        newPos[0] += 1
+    elif (dir == "W"):
+        newPos[0] -= 1
+
+    return newPos
+
+def nextSteps(mapGrid,pos):
+    result = []
+    
+    for dir in dirOpp.keys():
+        nextTile = getPos(mapGrid,move(pos,dir))
+        if nextTile != None:
+            if (dirOpp[dir] in tileDef[nextTile]):
+                result.append(dir)
+
+    return result
+
+def pGrid(grid):
+    for row in grid:
+        p(''.join(row))
+
+debug = True
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+mapGrid = parseInput(input)
+# pd(mapGrid)
+
+stepsGrid = []
+for i in range(len(mapGrid)):
+    thisRow = []
+    for j in range(len(mapGrid[0])):
+        thisRow.append(-1)
+    stepsGrid.append(thisRow)
+
+ioGrid = []
+for i in range(len(mapGrid)):
+    thisRow = []
+    for j in range(len(mapGrid[0])):
+        thisRow.append(" ")
+    ioGrid.append(thisRow)
+
+# pd(ioGrid)
+
+dirOpp = {
+    "N": "S",
+    "S": "N",
+    "W": "E",
+    "E": "W"
+}
+
+tileDef = {
+    "|": ['N','S'],
+    "-": ['E','W'],
+    "L": ['N','E'],
+    "J": ['N','W'],
+    "7": ['W','S'],
+    "F": ['E','S'],
+    ".": []
+}
+
+tileOpp = {}
+for k in tileDef.keys():
+    if (k != "."):
+        tileOpp[k] = {
+                        tileDef[k][0]: tileDef[k][1],
+                        tileDef[k][1]: tileDef[k][0]
+                    }
+
+startPos = findStart(mapGrid)
+setPos(stepsGrid,startPos,0)
+
+# pd(startPos)
+
+# pd(stepsGrid)
+
+startDirections = nextSteps(mapGrid,startPos)
+# p(startDirections)
+
+paths = []
+for d in startDirections:
+    paths.append([startPos,d])
+
+# pd(paths)
+
+steps = 0
+done = False
+while not done:
+    steps += 1
+    for path in paths:
+        nextPos = move(path[0],path[1])
+        # p(nextPos)
+        if (getPos(stepsGrid,nextPos) >= 0): 
+            # pd(getPos(stepsGrid,nextPos))
+            done = True
+            break
+        setPos(stepsGrid,nextPos,steps)
+        setPos(ioGrid,nextPos,'X')
+
+        tile = getPos(mapGrid,nextPos)
+
+        path[0] = nextPos
+        path[1] = tileOpp[tile][dirOpp[path[1]]]
+
+# pGrid(ioGrid)
+
+p(steps)

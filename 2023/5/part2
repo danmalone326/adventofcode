@@ -1,0 +1,191 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = {} 
+    data["seeds"] = [int(x) for x in input[0].split(":")[1].split()]
+    bySource = {}
+    # byDestination = {}
+
+    thisMap = {"ranges": []}
+    for line in input[1:]:
+        # p(line)
+        if (line.strip() == ""):
+            if ("source" not in thisMap):
+                pass
+            else:
+                # thisMap["ranges"].sort(key=lambda x: x["sourceStart"])
+                bySource[thisMap["source"]] = thisMap
+                # byDestination[thisMap["destination"]] = thisMap
+                thisMap = {"ranges": []}
+        elif (line[0].isdigit()):
+            ds, ss, rl = [int(x) for x in line.split()]
+            thisRange = {
+                # "destinationStart": ds, 
+                "sourceStart": ss, 
+                # "rangeLength": rl,
+                "sourceEnd": ss + rl -1, 
+                "delta": ds - ss
+                }
+            thisMap["ranges"].append(thisRange)
+        elif ("-to-" in line):
+            source,destination = line.split()[0].split("-to-")
+            thisMap["source"] = source
+            thisMap["destination"] = destination
+
+    if ("source" in thisMap):
+        bySource[thisMap["source"]] = thisMap
+        # byDestination[thisMap["destination"]] = thisMap
+
+
+    data["bySource"] = bySource
+    # data["byDestination"] = byDestination
+
+    return data
+
+def getMapBySource(data,type):
+    return data["bySource"][type]
+
+def map(data,source):
+    destMap = getMapBySource(data,source["type"])
+
+    dest = {"type": destMap["destination"]}
+
+    mapRanges = destMap["ranges"]
+    destRanges = []
+
+    for sourceRange in source["ranges"]:
+        first = sourceRange["first"]
+        last = sourceRange["last"]
+        thisSourceDone = False
+        for mapRange in sorted(mapRanges, key=lambda x: x["sourceStart"]):
+            mapFirst = mapRange["sourceStart"]
+            mapLast = mapRange["sourceEnd"]
+            mapDelta = mapRange["delta"]
+
+            if (first < mapFirst):
+                newFirst = first 
+                if (last < mapFirst):
+                    newLast = last 
+                    thisSourceDone = True
+                else:
+                    newLast = mapFirst - 1
+                    first = mapFirst
+                destRanges.append({"first": newFirst, "last": newLast})
+
+            
+            if (not thisSourceDone) and (first <= mapLast):
+                newFirst = first + mapDelta
+                if (last <= mapLast):
+                    newLast = last + mapDelta
+                    thisSourceDone = True
+                else: 
+                    newLast = mapLast + mapDelta
+                    first = mapLast + 1
+                destRanges.append({"first": newFirst, "last": newLast})
+
+            # already done
+            if (thisSourceDone): 
+                break
+
+        # handle any after last range
+        if (not thisSourceDone):
+            destRanges.append({"first": first, "last": last})
+
+    dest["ranges"] = destRanges
+    return dest
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+# data = arrayOfIntFromCSV(input[0])
+# p(data)
+
+data = parseInput(input)
+p(data)
+
+source = {"type": "seed","ranges":[]}
+# source["ranges"] = [{"first": 82, "last": 82}]
+seedRanges = data["seeds"]
+i=0
+while (i<len(seedRanges)):
+    this = {"first": seedRanges[i], "last": seedRanges[i] + seedRanges[i+1] - 1}
+    source["ranges"].append(this)
+    i += 2
+
+# p(source)
+
+while (source["type"] != "location"):
+    # p(data["bySource"][source["type"]])
+    source = map(data,source)
+    # p(source)
+
+
+lowest = sys.maxsize
+
+for range in source["ranges"]:
+    if range["first"] < lowest:
+        lowest = range["first"]
+
+p(lowest)

@@ -1,0 +1,162 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = input
+    return data
+
+def findExpandedRows(data):
+    rowIndexes = []
+    for y in range(len(data)):
+        if data[y].find("#") == -1:
+            rowIndexes.append(y)
+    return rowIndexes
+
+def findExpandedColumns(data):
+    columnIndexes = []
+    for x in range(len(data[0])):
+        foundGalaxy = False
+        for y in range(len(data)):
+            if data[y][x] == "#":
+                foundGalaxy = True
+                break
+        if not foundGalaxy:
+            columnIndexes.append(x)
+    return columnIndexes
+
+def findGalaxies(data):
+    galaxies = []
+    for y in range(len(data)):
+        for x in range(len(data[0])):
+            if data[y][x] == "#":
+                galaxies.append([x,y])
+    return galaxies
+
+expansion = 999999
+def measureDistance(g1, g2):
+    minX = min(g1[0],g2[0])
+    maxX = max(g1[0],g2[0])
+    minY = min(g1[1],g2[1])
+    maxY = max(g1[1],g2[1])
+
+
+    dx = maxX - minX
+    dy = maxY - minY
+
+    extraSteps = 0
+    for r in range(minY+1,maxY):
+        if r in expandedRows:
+            extraSteps += expansion
+    # p(extraSteps)
+    for c in range(minX+1,maxX):
+        if c in expandedColumns:
+            extraSteps += expansion
+    # p(extraSteps)
+
+    # p("dx: " + str(dx) + " dy: " + str(dy) + " extra: " + str(extraSteps))
+    steps = dx + dy + extraSteps
+
+    return steps
+
+debug = True
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+data = parseInput(input)
+# pd(data)
+
+expandedRows = findExpandedRows(data)
+# p("expanded rows")
+# p(expandedRows)
+
+expandedColumns = findExpandedColumns(data)
+# p("expanded columns")
+# p(expandedColumns)
+
+galaxies = findGalaxies(data)
+# p(galaxies)
+
+galaxyPairs = []
+for a in range(len(galaxies)-1):
+    for b in range(a+1,len(galaxies)):
+        galaxyPairs.append([a,b])
+# p(len(galaxyPairs))
+
+totalSteps = 0
+for pair in galaxyPairs:
+    # p("########")
+    # p(str(pair[0]) + " -> " + str(pair[1]))
+    # p([galaxies[pair[0]],galaxies[pair[1]]])
+    steps = measureDistance(galaxies[pair[0]],galaxies[pair[1]])
+    # p("steps: " + str(steps))
+
+    totalSteps += steps
+
+p(totalSteps)

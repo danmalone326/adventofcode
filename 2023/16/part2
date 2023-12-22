@@ -1,0 +1,198 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = input
+    return data
+
+dir2bin = {"N": 1, "S": 2, "E": 4, "W": 8}
+def checkVisit(energized,pos,dir):
+    temp = energized[pos[1]][pos[0]] & dir2bin[dir]
+    return temp > 0
+
+def setVisit(energized,pos,dir):
+    temp = energized[pos[1]][pos[0]] | dir2bin[dir]
+    energized[pos[1]][pos[0]] = temp
+
+def getTile(pos):
+    return data[pos[1]][pos[0]]
+
+def move(pos,dir):
+    newX = pos[0]
+    newY = pos[1]
+
+    if dir == 'N':
+        newY -= 1
+    elif dir == 'S':
+        newY += 1
+    elif dir == 'W':
+        newX -= 1
+    else:
+        newX += 1
+
+    return [newX,newY]
+
+def countEnergized(energized):
+    count = 0
+    for row in energized:
+        for i in row:
+            if i>0:
+                count += 1
+    return count
+
+def pe(energized):
+    for row in energized:
+        rowStr = ''.join(str(x) for x in row)
+        pd(rowStr)
+
+angleMap = {
+    '/': {
+        'N': 'E',
+        'S': 'W',
+        'W': 'S',
+        'E': 'N'
+    },
+    '\\': {
+        'N': 'W',
+        'S': 'E',
+        'W': 'N',
+        'E': 'S'
+    }
+}
+
+def testBeam(startPos,startDir):
+    
+    energized = []
+    for i in range(len(data)):
+        energized.append([0 for j in range(len(data[0]))])
+    # pe(energized)
+
+    beams = []
+    beams.append([startPos,startDir])
+
+    while len(beams) > 0:
+        nextBeams = []
+        for beam in beams:
+            pos = beam[0]
+            dir = beam[1]
+
+            newPos = move(pos,dir)
+
+            # if still on the board
+            if ((0 <= newPos[0] < len(data[0])) and (0 <= newPos[1] < len(data))):
+                # and we have not already been here in this direction
+                if not checkVisit(energized,newPos,dir):
+                    setVisit(energized,newPos,dir)
+                    tile = getTile(newPos)
+                    if ((tile == '.') or (tile == '-' and dir in ['E','W']) or (tile == '|' and dir in ['N','S'])):
+                        nextBeams.append([newPos,dir])
+                    elif (tile == '-'):
+                        nextBeams.append([newPos,'E'])
+                        nextBeams.append([newPos,'W'])
+                    elif (tile == '|'):
+                        nextBeams.append([newPos,'N'])
+                        nextBeams.append([newPos,'S'])
+                    elif (tile in ['/','\\']):
+                        nextBeams.append([newPos,angleMap[tile][dir]])
+
+        beams = nextBeams
+
+    return countEnergized(energized)
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+
+data = parseInput(sourceInput)
+# pd(data)
+
+maxEnergized = 0
+
+for y in range(len(data)):
+    energized = testBeam([-1,y],'E')
+    if energized > maxEnergized:
+        maxEnergized = energized
+    energized = testBeam([len(data[0]),y],'W')
+    if energized > maxEnergized:
+        maxEnergized = energized
+
+for x in range(len(data[0])):
+    energized = testBeam([x,-1],'S')
+    if energized > maxEnergized:
+        maxEnergized = energized
+    energized = testBeam([x,len(data)],'N')
+    if energized > maxEnergized:
+        maxEnergized = energized
+
+p(maxEnergized)

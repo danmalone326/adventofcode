@@ -1,0 +1,277 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = []
+    for line in input:
+        row = [int(x) for x in line]
+        data.append(row)
+    return data
+
+def makeNode(x,y,dir,stepsRemaining,cost,prevNode = None):
+    node = {
+        "x": x,
+        "y": y,
+        "dir": dir,
+        "stepsRemaining": stepsRemaining,
+        "cost": cost,
+        "prev": prevNode
+    }
+    return node
+
+def findLowestCostIndex(open):
+    lowest = sys.maxsize
+    lowestIndex = -1
+    for i in range(len(open)):
+        if open[i]["cost"] < lowest:
+            lowest = open[i]["cost"]
+            lowestIndex = i
+    return lowestIndex
+
+def findMatchingNodeIndex(nodeList,node):
+    index = -1
+    for i in range(len(nodeList)):
+        if (node['x'] == nodeList[i]['x'] and
+            node['y'] == nodeList[i]['y'] and
+            node['dir'] == nodeList[i]['dir'] and
+            node['stepsRemaining'] <= nodeList[i]['stepsRemaining']
+            ):
+            index = i
+            break
+    return index
+
+def initClosed():
+    global closed
+    global map
+
+    closed = []
+    for y in range(len(map)):
+        closed.append([[] for x in range(len(map[0]))])
+
+def addClosed(node):
+    global closed
+    closed[node['y']][node['x']].append(node)
+
+def isClosed(node):
+    global closed
+    nodeList = closed[node['y']][node['x']]
+
+    result = False
+    for thisNode in nodeList:
+        if (node['x'] == thisNode['x'] and
+            node['y'] == thisNode['y'] and
+            node['dir'] == thisNode['dir'] and
+            node['stepsRemaining'] <= thisNode['stepsRemaining'] and
+            node['cost'] >= thisNode['cost']
+            ):
+            result = True
+            break
+    return result
+
+def getBlockCost(x,y):
+    global map
+    result = map[y][x]
+    return result
+
+def inBounds(x,y):
+    global map
+    return (0 <= x < len(map[0])) and (0 <= y < len(map))
+
+directions = ['>','<','^','v']
+oppositeDirection = {
+    '>': '<',
+    '<': '>',
+    '^': 'v',
+    'v': '^'
+}
+def getNextNodes(node):
+    nextNodes = []
+
+    x = node["x"]
+    y = node["y"]
+    dir = node["dir"]
+    stepsRemaining = node["stepsRemaining"]
+    cost = node["cost"]
+
+    for newDir in directions:
+        if newDir != oppositeDirection[dir]:
+            if newDir == '<':
+                newX = x - 1
+                newY = y
+            elif newDir == '>':
+                newX = x + 1
+                newY = y
+            elif newDir == '^':
+                newX = x
+                newY = y - 1
+            elif newDir == 'v':
+                newX = x
+                newY = y + 1
+
+            if newDir == dir:
+                newStepsRemaining = stepsRemaining - 1
+            else:
+                newStepsRemaining = 2
+
+            if newStepsRemaining >= 0 and inBounds(newX,newY):
+                newCost = cost + getBlockCost(newX,newY)
+                nextNodes.append(makeNode(newX,newY,newDir,newStepsRemaining,newCost,node))
+            
+    return nextNodes
+        
+def pMapOverlay(node):
+    tempMap = []
+    for y in range(len(map)):
+        tempMap.append(''.join(str(x) for x in map[y]))
+
+    thisNode = node
+    while thisNode is not None:
+        x = thisNode['x']
+        y = thisNode['y']
+        dir = thisNode['dir']
+
+        tempMap[y] = tempMap[y][:x] + dir + tempMap[y][x+1:]
+
+        thisNode = thisNode['prev']
+
+    p(tempMap)
+
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+map = parseInput(sourceInput)
+# pd(map)
+
+open = []
+
+closed = None
+initClosed()
+
+# Should this be 3 steps or 2?
+open.append(makeNode(0,0,'>',3,0))
+destination = {"x": len(map[0])-1, "y": len(map)-1}
+
+found = False
+foundNode = None
+iteration = 0
+while len(open) > 0 and not found:
+
+    iteration += 1
+    if iteration%1000 == 0:
+        pd("iterarion: " + str(iteration))
+        pd("open: " + str(len(open)))
+
+    i = findLowestCostIndex(open)
+    node = open[i]
+    del open[i]
+
+    nextNodes = getNextNodes(node)
+
+    for thisNode in nextNodes:
+        if thisNode["x"] == destination["x"] and thisNode["y"] == destination["y"]:
+            found = True
+            foundNode = thisNode
+            break
+
+        skip = False
+
+        # find matching open node
+        if not skip:
+            matchIndex = findMatchingNodeIndex(open,thisNode)
+            if matchIndex != -1:
+                if open[matchIndex]["cost"] <= thisNode["cost"]:
+                    skip = True
+                else:
+                    if open[matchIndex]["stepsRemaining"] <= thisNode["stepsRemaining"]:
+                        del open[matchIndex]
+        
+        if not skip:
+            if isClosed(thisNode):
+                skip = True
+
+        if not skip:
+            open.append(thisNode)
+
+    addClosed(node)
+
+result = foundNode["cost"]
+p(result)
+
+# pd(foundNode)
+
+# pMapOverlay(foundNode)

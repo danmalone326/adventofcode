@@ -7,10 +7,7 @@ import re
 
 debug=True
 def p(obj):
-    if type(obj) in [str,int]:
-        print(obj)
-    else:
-        print(json.dumps(obj, indent=2))
+    print(json.dumps(obj, indent=2))
 
 def pd(obj):
     if debug:
@@ -72,8 +69,69 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = input
     return data
+
+def computeSingleLoad(str):
+    maxLoad = len(str)
+    nextLoad = maxLoad
+    totalLoad = 0
+    for i in range(len(str)):
+        if str[i] == 'O':
+            totalLoad += nextLoad
+            nextLoad -= 1
+        elif str[i] == '#':
+            nextLoad = maxLoad - i - 1
+    
+    return totalLoad
+
+def computeLoad(data):
+    totalLoad = 0
+    # for each column
+    for i in range(len(data[0])):
+        thisStr = ""
+        # for each row
+        for j in range(len(data)):
+            thisStr += data[j][i]
+        thisLoad = computeSingleLoad(thisStr)
+        totalLoad += thisLoad
+    return totalLoad
+        
+def rollSingle(str):
+    newStr = ""
+    for i in range(len(str)):
+        if str[i] == 'O':
+            newStr += 'O'
+        elif str[i] == '#':
+            newStr += '.'*(i-len(newStr)) + '#'
+    newStr += '.'*(len(str)-len(newStr))
+    
+    return newStr
+
+def rollNorthSouth(grid,dir = "N"):
+    # for each column
+    for i in range(len(grid[0])):
+        thisStr = ""
+        # for each row
+        for j in range(len(grid)):
+            thisStr += grid[j][i]
+
+        if dir=="S":
+            thisStr = thisStr[::-1]
+        # pd("")
+        # pd(thisStr)
+        newStr = rollSingle(thisStr)
+        # pd(newStr)
+        if dir=="S":
+            newStr = newStr[::-1]
+
+        for j in range(len(grid)):
+            grid[j] = grid[j][:i] + newStr[j] + grid[j][i+1:]
+
+        # pd(grid)
+
+    return grid
+
 
 debug = True
 
@@ -85,4 +143,7 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+data = rollNorthSouth(data,"N")
+pd(data)
+
+p(computeLoad(data))

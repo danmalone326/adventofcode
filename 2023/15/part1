@@ -7,10 +7,7 @@ import re
 
 debug=True
 def p(obj):
-    if type(obj) in [str,int]:
-        print(obj)
-    else:
-        print(json.dumps(obj, indent=2))
+    print(json.dumps(obj, indent=2))
 
 def pd(obj):
     if debug:
@@ -72,8 +69,17 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = input[0].split(",")
     return data
+
+def hashIt(str):
+    hash=0
+    for c in str:
+        hash += ord(c)
+        hash *= 17
+        hash %= 256
+
+    return hash
 
 debug = True
 
@@ -85,4 +91,10 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+total = 0
+for it in data:
+    hash = hashIt(it)
+    p(it + ": " +str(hash))
+    total += hash
+
+p(total)

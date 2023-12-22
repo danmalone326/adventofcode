@@ -1,0 +1,819 @@
+{
+  "seeds": [
+    950527520,
+    85181200,
+    546703948,
+    123777711,
+    63627802,
+    279111951,
+    1141059215,
+    246466925,
+    1655973293,
+    98210926,
+    3948361820,
+    92804510,
+    2424412143,
+    247735408,
+    4140139679,
+    82572647,
+    2009732824,
+    325159757,
+    3575518161,
+    370114248
+  ],
+  "bySource": {
+    "seed": {
+      "ranges": [
+        {
+          "sourceStart": 1631134559,
+          "sourceEnd": 1794694641,
+          "delta": 2011078244
+        },
+        {
+          "sourceStart": 928751267,
+          "sourceEnd": 995822098,
+          "delta": -437824692
+        },
+        {
+          "sourceStart": 23457277,
+          "sourceEnd": 169825148,
+          "delta": 534540130
+        },
+        {
+          "sourceStart": 2215630922,
+          "sourceEnd": 2366604677,
+          "delta": -688693262
+        },
+        {
+          "sourceStart": 1217101081,
+          "sourceEnd": 1239051700,
+          "delta": 2153781475
+        },
+        {
+          "sourceStart": 1553503793,
+          "sourceEnd": 1631134558,
+          "delta": 444884156
+        },
+        {
+          "sourceStart": 3586410917,
+          "sourceEnd": 3884517235,
+          "delta": -1886129287
+        },
+        {
+          "sourceStart": 1187175123,
+          "sourceEnd": 1209545336,
+          "delta": 490736293
+        },
+        {
+          "sourceStart": 1890531530,
+          "sourceEnd": 2056456009,
+          "delta": -529518350
+        },
+        {
+          "sourceStart": 169825149,
+          "sourceEnd": 198238181,
+          "delta": -12576090
+        },
+        {
+          "sourceStart": 2104867413,
+          "sourceEnd": 2215630921,
+          "delta": -868567261
+        },
+        {
+          "sourceStart": 3311996711,
+          "sourceEnd": 3586410916,
+          "delta": -263939764
+        },
+        {
+          "sourceStart": 1173225604,
+          "sourceEnd": 1187175122,
+          "delta": 173838057
+        },
+        {
+          "sourceStart": 2056456010,
+          "sourceEnd": 2099165344,
+          "delta": 1266015143
+        },
+        {
+          "sourceStart": 3884517236,
+          "sourceEnd": 3946251070,
+          "delta": -484128316
+        },
+        {
+          "sourceStart": 355487241,
+          "sourceEnd": 371276367,
+          "delta": 348878038
+        },
+        {
+          "sourceStart": 1794694642,
+          "sourceEnd": 1890531529,
+          "delta": 1667428113
+        },
+        {
+          "sourceStart": 1302126249,
+          "sourceEnd": 1553503792,
+          "delta": 2741463503
+        },
+        {
+          "sourceStart": 4254092795,
+          "sourceEnd": 4294967295,
+          "delta": -652754493
+        },
+        {
+          "sourceStart": 4210714136,
+          "sourceEnd": 4254092794,
+          "delta": -652754493
+        },
+        {
+          "sourceStart": 3946251071,
+          "sourceEnd": 4184067936,
+          "delta": -140478185
+        },
+        {
+          "sourceStart": 2099165345,
+          "sourceEnd": 2104867412,
+          "delta": 1266015143
+        },
+        {
+          "sourceStart": 19444885,
+          "sourceEnd": 23457276,
+          "delta": 166217207
+        },
+        {
+          "sourceStart": 371276368,
+          "sourceEnd": 524609382,
+          "delta": -162156999
+        },
+        {
+          "sourceStart": 4184067937,
+          "sourceEnd": 4210714135,
+          "delta": -1377698599
+        },
+        {
+          "sourceStart": 524609383,
+          "sourceEnd": 800277075,
+          "delta": 195545023
+        },
+        {
+          "sourceStart": 0,
+          "sourceEnd": 19444884,
+          "delta": 189674484
+        },
+        {
+          "sourceStart": 1209545337,
+          "sourceEnd": 1217101080,
+          "delta": 2183287839
+        },
+        {
+          "sourceStart": 800277076,
+          "sourceEnd": 928751266,
+          "delta": -437824692
+        },
+        {
+          "sourceStart": 1239051701,
+          "sourceEnd": 1302126248,
+          "delta": -65826097
+        },
+        {
+          "sourceStart": 2366604678,
+          "sourceEnd": 2581646087,
+          "delta": 466410859
+        },
+        {
+          "sourceStart": 2581646088,
+          "sourceEnd": 3311996710,
+          "delta": -505627373
+        },
+        {
+          "sourceStart": 198238182,
+          "sourceEnd": 355487240,
+          "delta": -198238182
+        }
+      ],
+      "source": "seed",
+      "destination": "soil"
+    },
+    "soil": {
+      "ranges": [
+        {
+          "sourceStart": 4061418601,
+          "sourceEnd": 4103887928,
+          "delta": -601193946
+        },
+        {
+          "sourceStart": 2211297482,
+          "sourceEnd": 2243882302,
+          "delta": 371791459
+        },
+        {
+          "sourceStart": 90342895,
+          "sourceEnd": 153825795,
+          "delta": 241802667
+        },
+        {
+          "sourceStart": 1387266751,
+          "sourceEnd": 1420265460,
+          "delta": 1141488864
+        },
+        {
+          "sourceStart": 696338617,
+          "sourceEnd": 889824443,
+          "delta": 1501410563
+        },
+        {
+          "sourceStart": 2169459779,
+          "sourceEnd": 2211297481,
+          "delta": 221775228
+        },
+        {
+          "sourceStart": 1106056857,
+          "sourceEnd": 1318793622,
+          "delta": -710428394
+        },
+        {
+          "sourceStart": 1996130240,
+          "sourceEnd": 2169459778,
+          "delta": -1837314217
+        },
+        {
+          "sourceStart": 553497263,
+          "sourceEnd": 696338616,
+          "delta": 54867966
+        },
+        {
+          "sourceStart": 425270652,
+          "sourceEnd": 553497262,
+          "delta": 2519795088
+        },
+        {
+          "sourceStart": 0,
+          "sourceEnd": 90342894,
+          "delta": 68473128
+        },
+        {
+          "sourceStart": 153825796,
+          "sourceEnd": 425270651,
+          "delta": 2461847966
+        },
+        {
+          "sourceStart": 3107109424,
+          "sourceEnd": 3202792328,
+          "delta": -674036714
+        },
+        {
+          "sourceStart": 976556879,
+          "sourceEnd": 1106056856,
+          "delta": 2096735472
+        },
+        {
+          "sourceStart": 3537847573,
+          "sourceEnd": 3786165370,
+          "delta": 431179007
+        },
+        {
+          "sourceStart": 889824444,
+          "sourceEnd": 976556878,
+          "delta": -138617861
+        },
+        {
+          "sourceStart": 1420265461,
+          "sourceEnd": 1996130239,
+          "delta": -582326443
+        },
+        {
+          "sourceStart": 2243882303,
+          "sourceEnd": 3027827685,
+          "delta": -830078506
+        },
+        {
+          "sourceStart": 3460224655,
+          "sourceEnd": 3537847572,
+          "delta": 757119723
+        },
+        {
+          "sourceStart": 4103887929,
+          "sourceEnd": 4294967295,
+          "delta": -601193946
+        },
+        {
+          "sourceStart": 1318793623,
+          "sourceEnd": 1387266750,
+          "delta": -1318793623
+        },
+        {
+          "sourceStart": 3786165371,
+          "sourceEnd": 4061418600,
+          "delta": -92392021
+        },
+        {
+          "sourceStart": 3049162302,
+          "sourceEnd": 3107109423,
+          "delta": -162043684
+        },
+        {
+          "sourceStart": 3027827686,
+          "sourceEnd": 3049162301,
+          "delta": -466073361
+        }
+      ],
+      "source": "soil",
+      "destination": "fertilizer"
+    },
+    "fertilizer": {
+      "ranges": [
+        {
+          "sourceStart": 1821072608,
+          "sourceEnd": 1854338002,
+          "delta": -69992225
+        },
+        {
+          "sourceStart": 4169230929,
+          "sourceEnd": 4294967295,
+          "delta": -31672495
+        },
+        {
+          "sourceStart": 3015767106,
+          "sourceEnd": 3216469710,
+          "delta": 280683935
+        },
+        {
+          "sourceStart": 1326187179,
+          "sourceEnd": 1821072607,
+          "delta": -1326187179
+        },
+        {
+          "sourceStart": 2963533004,
+          "sourceEnd": 3015767105,
+          "delta": 660154790
+        },
+        {
+          "sourceStart": 2859427144,
+          "sourceEnd": 2963533003,
+          "delta": 332918037
+        },
+        {
+          "sourceStart": 150099674,
+          "sourceEnd": 166461954,
+          "delta": 1570174329
+        },
+        {
+          "sourceStart": 1141203326,
+          "sourceEnd": 1326187178,
+          "delta": 394086824
+        },
+        {
+          "sourceStart": 166461955,
+          "sourceEnd": 180906053,
+          "delta": 1570174329
+        },
+        {
+          "sourceStart": 3812924581,
+          "sourceEnd": 3965590773,
+          "delta": -924238925
+        },
+        {
+          "sourceStart": 3216469711,
+          "sourceEnd": 3560759806,
+          "delta": 576798627
+        },
+        {
+          "sourceStart": 0,
+          "sourceEnd": 80107448,
+          "delta": 494885429
+        },
+        {
+          "sourceStart": 3668564832,
+          "sourceEnd": 3812924580,
+          "delta": -924238925
+        },
+        {
+          "sourceStart": 3965590774,
+          "sourceEnd": 4001482868,
+          "delta": -1257156962
+        },
+        {
+          "sourceStart": 4042696781,
+          "sourceEnd": 4169230928,
+          "delta": -545543135
+        },
+        {
+          "sourceStart": 4011024286,
+          "sourceEnd": 4042696780,
+          "delta": 252270515
+        },
+        {
+          "sourceStart": 80107449,
+          "sourceEnd": 150099673,
+          "delta": 1764495614
+        },
+        {
+          "sourceStart": 2708433812,
+          "sourceEnd": 2859427143,
+          "delta": 332918037
+        },
+        {
+          "sourceStart": 3560759807,
+          "sourceEnd": 3668564831,
+          "delta": 115162089
+        },
+        {
+          "sourceStart": 180906054,
+          "sourceEnd": 1141203325,
+          "delta": 394086824
+        },
+        {
+          "sourceStart": 1854338003,
+          "sourceEnd": 1914595287,
+          "delta": -69992225
+        },
+        {
+          "sourceStart": 4001482869,
+          "sourceEnd": 4011024285,
+          "delta": -217755948
+        }
+      ],
+      "source": "fertilizer",
+      "destination": "water"
+    },
+    "water": {
+      "ranges": [
+        {
+          "sourceStart": 3877657516,
+          "sourceEnd": 3920403618,
+          "delta": -342506233
+        },
+        {
+          "sourceStart": 553881424,
+          "sourceEnd": 1228791362,
+          "delta": 96035596
+        },
+        {
+          "sourceStart": 1821616588,
+          "sourceEnd": 2306529064,
+          "delta": 1986190650
+        },
+        {
+          "sourceStart": 472295571,
+          "sourceEnd": 553881423,
+          "delta": -376615752
+        },
+        {
+          "sourceStart": 286073377,
+          "sourceEnd": 472295570,
+          "delta": 1038753582
+        },
+        {
+          "sourceStart": 1819369007,
+          "sourceEnd": 1821616587,
+          "delta": 2473350708
+        },
+        {
+          "sourceStart": 1324471182,
+          "sourceEnd": 1511049152,
+          "delta": -1147205510
+        },
+        {
+          "sourceStart": 3206912207,
+          "sourceEnd": 3364067844,
+          "delta": -1104094159
+        },
+        {
+          "sourceStart": 2823586602,
+          "sourceEnd": 2923967878,
+          "delta": -563612916
+        },
+        {
+          "sourceStart": 1228791363,
+          "sourceEnd": 1324471181,
+          "delta": -1228791363
+        },
+        {
+          "sourceStart": 3851861395,
+          "sourceEnd": 3877657515,
+          "delta": -273964009
+        },
+        {
+          "sourceStart": 0,
+          "sourceEnd": 286073376,
+          "delta": 363843643
+        },
+        {
+          "sourceStart": 3364067845,
+          "sourceEnd": 3851861394,
+          "delta": -833767649
+        },
+        {
+          "sourceStart": 2306529065,
+          "sourceEnd": 2396547749,
+          "delta": 711564681
+        },
+        {
+          "sourceStart": 4090853565,
+          "sourceEnd": 4294967295,
+          "delta": -487160058
+        },
+        {
+          "sourceStart": 3920403619,
+          "sourceEnd": 4090348851,
+          "delta": -1560048656
+        },
+        {
+          "sourceStart": 4090348852,
+          "sourceEnd": 4090853564,
+          "delta": -2270979845
+        },
+        {
+          "sourceStart": 2923967879,
+          "sourceEnd": 3206912206,
+          "delta": -1104094159
+        },
+        {
+          "sourceStart": 2396547750,
+          "sourceEnd": 2823586601,
+          "delta": 711564681
+        }
+      ],
+      "source": "water",
+      "destination": "light"
+    },
+    "light": {
+      "ranges": [
+        {
+          "sourceStart": 1537920618,
+          "sourceEnd": 1621169936,
+          "delta": 2673797359
+        },
+        {
+          "sourceStart": 2785100632,
+          "sourceEnd": 3692932717,
+          "delta": 27070034
+        },
+        {
+          "sourceStart": 3692932718,
+          "sourceEnd": 4154951461,
+          "delta": 27070034
+        },
+        {
+          "sourceStart": 1621169937,
+          "sourceEnd": 2029396649,
+          "delta": -812140591
+        },
+        {
+          "sourceStart": 2468034741,
+          "sourceEnd": 2785100631,
+          "delta": 27070034
+        },
+        {
+          "sourceStart": 2029396650,
+          "sourceEnd": 2468034740,
+          "delta": -138971723
+        },
+        {
+          "sourceStart": 740254029,
+          "sourceEnd": 864751749,
+          "delta": 1588808989
+        },
+        {
+          "sourceStart": 4223726779,
+          "sourceEnd": 4253423259,
+          "delta": -41705283
+        },
+        {
+          "sourceStart": 864751750,
+          "sourceEnd": 1537920617,
+          "delta": 352504309
+        },
+        {
+          "sourceStart": 4253423260,
+          "sourceEnd": 4294967295,
+          "delta": -1799862521
+        },
+        {
+          "sourceStart": 4154951462,
+          "sourceEnd": 4223726778,
+          "delta": -3414697433
+        }
+      ],
+      "source": "light",
+      "destination": "temperature"
+    },
+    "temperature": {
+      "ranges": [
+        {
+          "sourceStart": 3495276000,
+          "sourceEnd": 3526197271,
+          "delta": -3247671442
+        },
+        {
+          "sourceStart": 1344043806,
+          "sourceEnd": 1549432027,
+          "delta": -2927991
+        },
+        {
+          "sourceStart": 3081217791,
+          "sourceEnd": 3495275999,
+          "delta": -1534713754
+        },
+        {
+          "sourceStart": 0,
+          "sourceEnd": 459661265,
+          "delta": 1960562246
+        },
+        {
+          "sourceStart": 959204089,
+          "sourceEnd": 1206808646,
+          "delta": -959204089
+        },
+        {
+          "sourceStart": 1206808647,
+          "sourceEnd": 1344043805,
+          "delta": 2182153466
+        },
+        {
+          "sourceStart": 1549432028,
+          "sourceEnd": 2112479189,
+          "delta": -1270906198
+        },
+        {
+          "sourceStart": 459661266,
+          "sourceEnd": 959204088,
+          "delta": 381911726
+        },
+        {
+          "sourceStart": 2112479190,
+          "sourceEnd": 3081217790,
+          "delta": 307744322
+        }
+      ],
+      "source": "temperature",
+      "destination": "humidity"
+    },
+    "humidity": {
+      "ranges": [
+        {
+          "sourceStart": 1012762605,
+          "sourceEnd": 1176055959,
+          "delta": -654265402
+        },
+        {
+          "sourceStart": 2859367155,
+          "sourceEnd": 3106979483,
+          "delta": 175896200
+        },
+        {
+          "sourceStart": 1293357218,
+          "sourceEnd": 1396448130,
+          "delta": -271471728
+        },
+        {
+          "sourceStart": 3795114494,
+          "sourceEnd": 3946119948,
+          "delta": 348847347
+        },
+        {
+          "sourceStart": 4227561425,
+          "sourceEnd": 4235987776,
+          "delta": -649187842
+        },
+        {
+          "sourceStart": 2177370950,
+          "sourceEnd": 2183439624,
+          "delta": 681807172
+        },
+        {
+          "sourceStart": 1639932830,
+          "sourceEnd": 1827353950,
+          "delta": -1639932830
+        },
+        {
+          "sourceStart": 232394351,
+          "sourceEnd": 276160074,
+          "delta": 289396207
+        },
+        {
+          "sourceStart": 4235987777,
+          "sourceEnd": 4246112610,
+          "delta": -397107646
+        },
+        {
+          "sourceStart": 23652296,
+          "sourceEnd": 224750565,
+          "delta": 1270548214
+        },
+        {
+          "sourceStart": 3380887726,
+          "sourceEnd": 3550904283,
+          "delta": -515640929
+        },
+        {
+          "sourceStart": 4100409404,
+          "sourceEnd": 4227561424,
+          "delta": -1923038454
+        },
+        {
+          "sourceStart": 3954902589,
+          "sourceEnd": 4006190277,
+          "delta": -672026905
+        },
+        {
+          "sourceStart": 1891601121,
+          "sourceEnd": 2060825227,
+          "delta": -766624718
+        },
+        {
+          "sourceStart": 3550904284,
+          "sourceEnd": 3795114493,
+          "delta": -216740911
+        },
+        {
+          "sourceStart": 224750566,
+          "sourceEnd": 232394350,
+          "delta": 340805716
+        },
+        {
+          "sourceStart": 2183439625,
+          "sourceEnd": 2377882495,
+          "delta": 1403360310
+        },
+        {
+          "sourceStart": 0,
+          "sourceEnd": 23652295,
+          "delta": 573200067
+        },
+        {
+          "sourceStart": 3946119949,
+          "sourceEnd": 3954902588,
+          "delta": -164877143
+        },
+        {
+          "sourceStart": 3238081064,
+          "sourceEnd": 3380887725,
+          "delta": -521709604
+        },
+        {
+          "sourceStart": 2377882496,
+          "sourceEnd": 2494653653,
+          "delta": -73359525
+        },
+        {
+          "sourceStart": 4246112611,
+          "sourceEnd": 4294967295,
+          "delta": -456087165
+        },
+        {
+          "sourceStart": 447236157,
+          "sourceEnd": 1012762604,
+          "delta": 1048062623
+        },
+        {
+          "sourceStart": 1585957916,
+          "sourceEnd": 1639932829,
+          "delta": -989105553
+        },
+        {
+          "sourceStart": 1827353951,
+          "sourceEnd": 1891601120,
+          "delta": -987016889
+        },
+        {
+          "sourceStart": 276160075,
+          "sourceEnd": 447236156,
+          "delta": -88738954
+        },
+        {
+          "sourceStart": 4006190278,
+          "sourceEnd": 4100409403,
+          "delta": -1384037944
+        },
+        {
+          "sourceStart": 3106979484,
+          "sourceEnd": 3238081063,
+          "delta": -615928730
+        },
+        {
+          "sourceStart": 1396448131,
+          "sourceEnd": 1585957915,
+          "delta": -745620854
+        },
+        {
+          "sourceStart": 2789610530,
+          "sourceEnd": 2859367154,
+          "delta": -368316401
+        },
+        {
+          "sourceStart": 2494653654,
+          "sourceEnd": 2789610529,
+          "delta": 1354351311
+        },
+        {
+          "sourceStart": 1176055960,
+          "sourceEnd": 1293357217,
+          "delta": -271471728
+        }
+      ],
+      "source": "humidity",
+      "destination": "location"
+    }
+  }
+}
+125742456

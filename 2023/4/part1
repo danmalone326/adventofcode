@@ -1,0 +1,132 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseCards(input):
+    data = []
+
+    for line in input:
+        gameStr, rest = line.split(":",1)
+        winnerStr, pickStr = rest.split("|")
+
+        winners = sorted([int(num) for num in winnerStr.split()])
+        picks = sorted([int(num) for num in pickStr.split()])
+
+        data.append({"game": gameStr, "winners": winners, "picks": picks, "count": 1})
+        
+    return data
+
+def computePrizes(cards):
+    for cardCounter in range(len(cards)):
+        card = cards[cardCounter]
+        winners = card["winners"]
+        picks = card["picks"]
+
+        winnerCounter = 0
+        pickCounter = 0
+        matchCounter = 0
+
+        while (winnerCounter < len(winners) and pickCounter < len(picks)):
+            winNum = winners[winnerCounter]
+            pickNum = picks[pickCounter]
+            if (winNum == pickNum):
+                matchCounter += 1
+                pickCounter += 1
+                winnerCounter += 1
+            elif (winNum < pickNum):
+                winnerCounter += 1
+            else:
+                pickCounter += 1
+        
+        if matchCounter > 0:
+            prize = pow(2,matchCounter-1)
+        else:
+            prize = 0
+        card["prize"] = prize
+        
+        if matchCounter > 0:
+            for i in range(matchCounter):
+                index = cardCounter+1+i
+                if index < len(cards):
+                    cards[index]["count"] += card["count"]
+        
+
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+
+# data = arrayOfIntFromCSV(input[0])
+# p(data)
+
+data = parseCards(input)
+
+computePrizes(data)
+p(data)
+
+
+totalPrize = sum([card["prize"] for card in data])
+p(totalPrize)
+
+totalPrize2 = sum([card["count"] for card in data])
+p(totalPrize2)

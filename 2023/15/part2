@@ -1,0 +1,163 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = input[0].split(",")
+    return data
+
+def hashIt(str):
+    hash=0
+    for c in str:
+        hash += ord(c)
+        hash *= 17
+        hash %= 256
+
+    return hash
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+# pd(data)
+pd(len(data))
+
+box = [None]*256
+# p(len(box))
+
+# z=1
+for it in data:
+    # pd(z)
+    # pd(it)
+    # z+=1
+    # debug=(z>170)
+
+    if "-" in it:
+        # remove
+        label = it.split("-")[0]
+        boxNum = hashIt(label)
+
+        if box[boxNum] != None:
+            thisLens = box[boxNum]
+            if thisLens["label"] == label:
+                box[boxNum] = thisLens["next"]
+            else:
+                while True:             
+                    if thisLens["next"] == None:
+                        break
+                    elif thisLens["next"]["label"] == label:
+                        thisLens["next"] = thisLens["next"]["next"]
+                        break
+                    else:
+                        temp = thisLens["next"]
+                        thisLens = temp
+
+    elif "=" in it:
+        label,lensNumStr = it.split("=")
+        boxNum = hashIt(label)
+        lensNum = int(lensNumStr)
+
+        newLens = {"label": label, "lensNum": lensNum, "next": None}
+
+        if box[boxNum] == None:
+            box[boxNum] = newLens
+        else:
+            thisLens = box[boxNum]
+            while True:
+                if thisLens["label"] == newLens["label"]:
+                    thisLens["lensNum"] = lensNum
+                    break
+                elif thisLens["next"] == None:
+                    thisLens["next"] = newLens
+                    break
+                else:
+                    thisLens = thisLens["next"]
+    else:
+        pd("error?")
+
+pd("compute power")
+
+totalPower = 0
+for boxNum in range(len(box)):
+    slot=1
+    thisLens = box[boxNum]
+    while thisLens != None:
+        thisPower = (1+boxNum) * slot * thisLens["lensNum"]
+        totalPower += thisPower
+        # pd(thisPower)
+
+        thisLens = thisLens["next"]
+        slot += 1
+
+
+p(totalPower)

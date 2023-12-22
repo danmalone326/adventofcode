@@ -1,0 +1,144 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+def p(obj):
+    print(json.dumps(obj, indent=2))
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = {} 
+    data["seeds"] = [int(x) for x in input[0].split(":")[1].split()]
+    bySource = {}
+    byDestination = {}
+
+    thisMap = {"ranges": []}
+    for line in input[1:]:
+        p(line)
+        if (line.strip() == ""):
+            if ("source" not in thisMap):
+                pass
+            else:
+                bySource[thisMap["source"]] = thisMap
+                byDestination[thisMap["destination"]] = thisMap
+                thisMap = {"ranges": []}
+        elif (line[0].isdigit()):
+            ds, ss, rl = [int(x) for x in line.split()]
+            thisRange = {"destinationStart": ds, "sourceStart": ss, "rangeLength": rl}
+            thisMap["ranges"].append(thisRange)
+        elif ("-to-" in line):
+            source,destination = line.split()[0].split("-to-")
+            thisMap["source"] = source
+            thisMap["destination"] = destination
+
+    if ("source" in thisMap):
+        bySource[thisMap["source"]] = thisMap
+        byDestination[thisMap["destination"]] = thisMap
+
+
+    data["bySource"] = bySource
+    data["byDestination"] = byDestination
+
+    return data
+
+def getNextBySource(data,type,number):
+    map = data["bySource"][type]
+    
+    newType = map["destination"]
+    newNumber = number
+
+    for r in map["ranges"]:
+#        if (r["sourceStart"] <= number < r["sourceStart"]+r["rangeLength"]):
+       if (number in range(r["sourceStart"],r["sourceStart"]+r["rangeLength"])):
+            newNumber = newNumber - r["sourceStart"] + r["destinationStart"]
+            break
+    
+    return (newType,newNumber)
+
+def mapTo(data,sourceType,sourceNumber,destinationType):
+    result = []
+
+    currentType = sourceType
+    currentNumber = sourceNumber
+    result.append((currentType,currentNumber))
+
+    while (currentType != destinationType):
+        currentType,currentNumber = getNextBySource(data,currentType,currentNumber)
+        result.append((currentType,currentNumber))
+
+    return result
+
+input = getInput()
+
+# data = arrayFromGridOfDigits(input)
+# p(data)
+
+# data = arrayOfIntFromCSV(input[0])
+# p(data)
+
+data = parseInput(input)
+p(data)
+
+lowest = sys.maxsize
+for index in range(0,len(data["seeds"]),2):
+    for seedNumber in range(data["seeds"][index],data["seeds"][index]+data["seeds"][index+1]):    
+        this = mapTo(data,"seed",seedNumber,"location")
+        location = this[-1][1]
+        if (location < lowest):
+            lowest = location
+
+p(lowest)

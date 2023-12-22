@@ -1,0 +1,354 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = []
+    for line in input:
+        row = [int(x) for x in line]
+        data.append(row)
+    return data
+
+def makeNode(x,y,dir,stepsTaken,cost,prevNode = None, deleteMe = False):
+    node = {
+        "id": '{},{},{},{}'.format(x,y,dir,stepsTaken),
+        "x": x,
+        "y": y,
+        "dir": dir,
+        "stepsTaken": stepsTaken,
+        "cost": cost,
+        "prev": prevNode,
+        "deleteMe": deleteMe
+    }
+    return node
+
+def initOpen():
+    global open
+    global map
+
+    open = {
+        "xy": {},
+        "cost": {}
+    }
+
+
+def addOpen(node):
+    id = node["id"]
+    cost = node["cost"]
+    
+    open["xy"][id] = node
+    if cost not in open["cost"]:
+        open["cost"][cost] = []
+    open["cost"][cost].append(node)
+
+def delOpen(node):
+    id = node["id"]
+    cost = node["cost"]
+    
+    del open["xy"][id]
+    open["cost"][cost].remove(node)
+    # try:
+    #     open["xy"][y][x].remove(node)
+    # except ValueError:
+    #     pass
+
+    # try:
+    #     open["cost"][cost].remove(node)
+    # except ValueError:
+    #     pass
+
+def isOpen():
+    result = False
+    for key in open["cost"].keys():
+        if len(open["cost"][key]) > 0:
+            result = True
+            break
+    return result
+
+
+def popLowestOpenNode():
+    keys = sorted(open["cost"].keys())
+
+    result = None
+    for key in keys:
+        if len(open["cost"][key]) == 0:
+            del open["cost"][key]
+        else:
+            result = open["cost"][key][0]
+            delOpen(result)
+    return result
+
+def findOpenNode(node):
+    global open
+
+    id = node["id"]
+
+    if id in open['xy']:
+        foundNode = open['xy'][id]
+    else:
+        foundNode = None
+    return foundNode
+
+def initClosed():
+    global closed
+    global map
+
+    closed = []
+    for y in range(len(map)):
+        closed.append([[] for x in range(len(map[0]))])
+
+def addClosed(node):
+    global closed
+    closed[node['y']][node['x']].append(node)
+
+def isClosed(node):
+    global closed
+    closedNodeList = closed[node['y']][node['x']]
+
+    result = False
+    for closedNode in closedNodeList:
+        if (node['dir'] == closedNode['dir']):
+            if (((closedNode['stepsTaken'] >= minSteps
+                  and closedNode['stepsTaken'] <= node['stepsTaken'])
+                 or closedNode['stepsTaken'] == node['stepsTaken'])
+                and closedNode['cost'] <= node['cost']):
+                result = True
+                break
+    return result
+
+def getBlockCost(x,y):
+    global map
+    result = map[y][x]
+    return result
+
+def inBounds(x,y):
+    global map
+    return (0 <= x < len(map[0])) and (0 <= y < len(map))
+
+directions = ['>','<','^','v']
+oppositeDirection = {
+    '>': '<',
+    '<': '>',
+    '^': 'v',
+    'v': '^'
+}
+def getNextNodes(node):
+    nextNodes = []
+
+    x = node["x"]
+    y = node["y"]
+    dir = node["dir"]
+    stepsTaken = node["stepsTaken"]
+    cost = node["cost"]
+
+    for newDir in directions:
+        if oppositeDirection[newDir] != dir:
+            if newDir == '<':
+                newX = x - 1
+                newY = y
+            elif newDir == '>':
+                newX = x + 1
+                newY = y
+            elif newDir == '^':
+                newX = x
+                newY = y - 1
+            elif newDir == 'v':
+                newX = x
+                newY = y + 1
+
+            if newDir == dir:
+                newStepsTaken = stepsTaken + 1
+            else:
+                newStepsTaken = 1
+
+            if newStepsTaken <= maxSteps and inBounds(newX,newY):
+                newCost = cost + getBlockCost(newX,newY)
+                nextNodes.append(makeNode(newX,newY,newDir,newStepsTaken,newCost,node))
+            
+    return nextNodes
+        
+def pMapOverlay(node):
+    tempMap = []
+    for y in range(len(map)):
+        tempMap.append(''.join(str(x) for x in map[y]))
+
+    thisNode = node
+    while thisNode is not None:
+        x = thisNode['x']
+        y = thisNode['y']
+        dir = thisNode['dir']
+
+        tempMap[y] = tempMap[y][:x] + dir + tempMap[y][x+1:]
+
+        thisNode = thisNode['prev']
+
+    p(tempMap)
+
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+map = parseInput(sourceInput)
+# pd(map)
+
+open = None
+initOpen()
+
+closed = None
+initClosed()
+
+minSteps = 0
+maxSteps = 3
+
+# open.append(makeNode(0,0,'>',0,0))
+addOpen(makeNode(0,0,'X',0,0))
+
+destination = {"x": len(map[0])-1, "y": len(map)-1}
+
+found = False
+foundNode = None
+iteration = -2
+while isOpen() and not found:
+
+    iteration += 1
+    if iteration%100 == 0:
+        pd("iterarion: " + str(iteration))
+        pd("open: " + str(sum([len(open["cost"][key]) for key in open["cost"].keys()])))
+        pd(list(open['cost'].keys()))
+
+    node = popLowestOpenNode()
+
+    if node["deleteMe"]:
+        # pd('delete')
+        continue
+
+    nextNodes = getNextNodes(node)
+
+    for thisNode in nextNodes:
+        if ((thisNode["x"] == destination["x"]) and 
+            (thisNode["y"] == destination["y"]) and 
+            (thisNode['stepsTaken'] >= minSteps)):
+            found = True
+            foundNode = thisNode
+            break
+        if ((thisNode["x"] == destination["x"]) and 
+            (thisNode["y"] == destination["y"])):
+            pd("found something")
+
+
+        skip = False
+
+        # find matching open node
+        if not skip:
+            match = findOpenNode(thisNode)
+            if match is not None:
+                if (match["stepsTaken"] >= minSteps
+                    and match["stepsTaken"] < thisNode["stepsTaken"]
+                    and match["cost"] <= thisNode["cost"]):
+                    skip = True
+                    break
+                elif (thisNode["stepsTaken"] >= minSteps
+                        and thisNode["stepsTaken"] < match["stepsTaken"]
+                        and thisNode["cost"] <= match["cost"]):
+                    # del open[match]
+                    match["deleteMe"] = True
+                elif (thisNode["stepsTaken"] == match["stepsTaken"]):
+                    if (match["cost"] <= thisNode["cost"]):
+                        skip = True
+                        break
+                    else:
+                        match["deleteMe"] = True
+
+        if not skip:
+            if isClosed(thisNode):
+                skip = True
+
+        if not skip:
+            addOpen(thisNode)
+
+    addClosed(node)
+
+pd("iterarion: " + str(iteration))
+pd("open: " + str(sum([len(open["cost"][key]) for key in open["cost"].keys()])))
+pd(open['cost'])
+
+
+result = foundNode["cost"]
+p(result)
+
+# pd(foundNode)
+
+pMapOverlay(foundNode)
