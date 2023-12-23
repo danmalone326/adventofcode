@@ -98,14 +98,75 @@ def parseInput(input):
             data["workflows"][id] = thisWorkflow
     return data
 
+def appendRule(rule1,rule2):
+    newRule = rule1
+    if len(rule1) > 0 and len(rule2) > 0 and not rule1[-1] == ',' and not rule2[0] == ',':
+        newRule += ','
+    newRule += rule2
+    return newRule
 
-def evalWorkflow(part,workflow):
-    result = None
+translateTable = {
+    ord("<"): ord(">"),
+    ord(">"): ord("<")
+}
+def followPath(workflowID,cumulativeRules=""):
+    workflow = workflows[workflowID]
+    oppositeRulesSoFar = ""
     for rule in workflow:
+        thisRules = appendRule(cumulativeRules,oppositeRulesSoFar)
         condition,result = rule
-        if eval(condition,part):
-            break
+        if condition != 'True':
+            thisRules = appendRule(thisRules,condition)
+            oppositeRulesSoFar = appendRule(oppositeRulesSoFar,'!'+condition)
+        if result == 'A':
+            accepted.append(thisRules)
+        elif result == 'R':
+            rejected.append(thisRules)
+        else:
+            followPath(result,thisRules)
+        
+def computePossibilities(ruleSet):
+    low = {
+        'x': 1,
+        'm': 1,
+        'a': 1,
+        's': 1
+    }
+    high = {
+        'x': 4000,
+        'm': 4000,
+        'a': 4000,
+        's': 4000
+    }
+    for rule in ruleSet.split(','):
+        if rule[0] == '!':
+            key = rule[1]
+            operator = rule[2]
+            value = int(rule[3:])
+            if operator == '<': # actual >=, set min
+                low[key] = max(low[key],value)
+            elif operator == '>': # actual <=, set max
+                high[key] = min(high[key],value)
+        else:
+            key = rule[0]
+            operator = rule[1]
+            value = int(rule[2:])
+            if operator == '<': 
+                high[key] = min(high[key],value-1)
+            elif operator == '>': 
+                low[key] = max(low[key],value+1)
+
+    result = 1
+    for key in low.keys():
+        thisCount = 0
+        if low[key] <= high[key]:
+            thisCount = high[key] - low[key] + 1
+        result *= thisCount
+
     return result
+
+
+
 
 debug = True
 
@@ -125,33 +186,14 @@ workflows = data["workflows"]
 accepted = []
 rejected = []
 
-for partIndex in range(len(parts)):
-    part = copy.deepcopy(parts[partIndex])
-    # pd(part)
-    currentWorkflowID = "in"
-    while currentWorkflowID not in ['A','R']:
-        # print("{} -> ".format(currentWorkflowID),end="")
-        currentWorkflowID = evalWorkflow(part,workflows[currentWorkflowID])
-    # p(currentWorkflowID)
-    if currentWorkflowID == 'A':
-        # pd(part)
-        accepted.append(partIndex)
-    else:
-        rejected.append(partIndex)
+followPath("in")
+
+p(len(accepted))
+p(accepted)
 
 total = 0
-for partIndex in accepted:
-    # pd(partIndex)
-    part = parts[partIndex]
-    # pd(part)
-    partTotal = 0
-    for rating in part:
-        # pd(rating)
-        partTotal += part[rating]
-    total += partTotal
+for ruleSet in accepted:
+    thisCount = computePossibilities(ruleSet)
+    total += thisCount
 
 p(total)
-
-
-
-# p(1)

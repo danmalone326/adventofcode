@@ -1,0 +1,196 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = {}
+    for line in input:
+        name, destinations = line.split(" -> ")
+        if name[0] in ['&','%']:
+            moduleType = name[0]
+            name = name[1:]
+        else:
+            moduleType = "b"
+        data[name] = {"type": moduleType, "dest": destinations.split(', ')}
+    return data
+
+on = True
+off = False
+high = True
+low = False
+
+def initializeModules():
+    global moduleData
+
+    for key in moduleData:
+        module = moduleData[key]
+        if module["type"] == "%":
+            module["state"] = off
+        elif module["type"] == "&":
+            module["lastInputs"] = {}
+
+    for key in moduleData:
+        module = moduleData[key]
+        for dest in module['dest']:
+            if dest in moduleData:
+                destModule = moduleData[dest]
+                if destModule['type'] == '&':
+                    destModule['lastInputs'][key] = low
+
+pulseQueue = []
+lowPulses = 0
+highPulses = 0
+def addPulse(source,destination,pulseType):
+    global lowPulses, highPulses
+    if pulseType == low:
+        lowPulses += 1
+    else:
+        highPulses += 1
+    pulseQueue.append([source,destination,pulseType])
+
+def popPulse():
+    result = pulseQueue.pop(0)
+    return result
+
+def processBroadcast(pulse):
+    sourceName,myName,pulseType = pulse
+    myModule = moduleData[myName]
+    for destName in myModule['dest']:
+        addPulse(myName,destName,pulseType)
+
+def processFlipFlop(pulse):
+    sourceName,myName,pulseType = pulse
+    if pulseType != high:
+        myModule = moduleData[myName]
+        myModule['state'] = not myModule['state']
+        outputPulseType = myModule['state']
+        for destName in myModule['dest']:
+            addPulse(myName,destName,outputPulseType)
+
+def processConjunction(pulse):
+    sourceName,myName,pulseType = pulse
+    myModule = moduleData[myName]
+    myModule['lastInputs'][sourceName] = pulseType
+    outputPulseType = not all(list(myModule['lastInputs'].values()))
+    for destName in myModule['dest']:
+        addPulse(myName,destName,outputPulseType) 
+
+def pPulse(pulse):
+    source,destination,pulseType = pulse
+    pulseStr = '-'
+    if pulseType == low:
+        pulseStr += 'low'
+    else:
+        pulseStr += 'high'
+    pulseStr += '->'
+    pd('{} {} {}'.format(source,pulseStr,destination))
+
+def processNextPulse():
+    pulse = popPulse()
+    source,destination,pulseType = pulse
+
+    # pPulse(pulse)
+
+    if destination not in moduleData:
+        return
+    
+    destinationType = moduleData[destination]['type']
+
+    if destinationType == 'b':
+        processBroadcast(pulse)
+    elif destinationType == '%':
+        processFlipFlop(pulse)
+    elif destinationType == '&':
+        processConjunction(pulse)
+
+def pushButton():
+    addPulse('button','broadcaster',low)
+
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+moduleData = parseInput(sourceInput)
+initializeModules()
+pd(moduleData)
+
+for i in range(1000):
+    pushButton()
+    while pulseQueue:
+        processNextPulse()
+
+result = (lowPulses * highPulses)
+p(result)
