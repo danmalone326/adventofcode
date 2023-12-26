@@ -4,6 +4,7 @@ import fileinput
 import json
 import math
 import re
+import copy
 
 debug=True
 def p(obj):

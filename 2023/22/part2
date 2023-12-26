@@ -1,0 +1,298 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def normalizeBrick(brick):
+    a,b,data = brick
+    result = [
+        [
+            min(a[0],b[0]),
+            min(a[1],b[1]),
+            min(a[2],b[2])
+        ],
+        [
+            max(a[0],b[0]),
+            max(a[1],b[1]),
+            max(a[2],b[2])
+        ],
+        data
+    ]
+    return result
+
+lowCoord = 0
+highCoord = 1
+dataKey = 2
+xCoord = 0
+yCoord = 1
+zCoord = 2
+labelKey = "label"
+idKey = "id"
+fallKey = "willFall"
+supportCountKey = "supportCount"
+
+def parseInput(input):
+    result = []
+    index = 0
+    c = 64
+    for line in input:
+        c+=1
+        index+=1
+        brick = []
+        for pos in line.split('~'):
+            brick.append([int(x) for x in pos.split(',')])
+        brick.append({})
+        brick[dataKey][labelKey] = chr(c)
+        brick[dataKey][idKey] = index
+        result.append(normalizeBrick(brick))
+    return result
+
+def sortedPile(pile):
+    result = sorted(pile, key=lambda brick: brick[0][2])
+    return result
+
+def brickSupportedBy(brick,supportBrick):
+    if ((brick[lowCoord][zCoord] - 1) == supportBrick[highCoord][zCoord]):
+        for x in range(brick[lowCoord][xCoord],brick[highCoord][xCoord]+1):
+            for y in range(brick[lowCoord][yCoord],brick[highCoord][yCoord]+1):
+                if ((supportBrick[lowCoord][xCoord] <= x <= supportBrick[highCoord][xCoord]) and
+                    (supportBrick[lowCoord][yCoord] <= y <= supportBrick[highCoord][yCoord])):
+                    return True
+    return False
+
+def brickSupported(brick,pile):
+    if brick[lowCoord][zCoord] == 1:
+        return True
+    for supportBrick in pile:
+        if brickSupportedBy(brick,supportBrick):
+            return True
+    return False 
+
+def bricksSupportedBy(supportBrick,pile):
+    result = []
+    for thisBrick in pile:
+        if brickSupportedBy(thisBrick,supportBrick):
+            result.append(thisBrick)
+    return result
+
+def bricksSupportedByCount(supportBrick,pile):
+    if supportCountKey in supportBrick[dataKey]:
+        result = supportBrick[dataKey][supportCountKey]
+    else:
+        result = bricksSupportedBy(supportBrick,pile)
+        supportBrick[dataKey][supportCountKey] = result
+    return result
+
+
+def supportedByBricks(brick,pile):
+    result = []
+    for thisBrick in pile:
+        if brickSupportedBy(brick,thisBrick):
+            result.append(thisBrick)
+    return result
+
+def dropBrickOnPile(brick,pile):
+    thisBrick = copy.deepcopy(brick)
+    # pd("dropping:")
+    # pdBrick(thisBrick)
+    # pd("on pile")
+    # pdPile(pile)
+    while not brickSupported(thisBrick,pile):
+        if thisBrick[lowCoord][zCoord] > 1:
+            thisBrick[lowCoord][zCoord] -= 1
+            thisBrick[highCoord][zCoord] -= 1
+    pile.append(thisBrick)
+
+def findRemovable(pile):
+    result = []
+    for brick in pile:
+        removable = True
+        supported = bricksSupportedBy(brick,pile)
+        # pd('supported')
+        # pdPile(supported)
+        for supportedBrick in supported:
+            supportedBy = supportedByBricks(supportedBrick,pile)
+            if len(supportedBy) == 1:
+                removable = False
+        if removable:
+            brick[dataKey][fallKey] = []
+            result.append(brick)
+    return result
+
+def findBricksWithNoSupport(pile,ignored):
+    result = []
+    for brick in pile:
+        # pd("checking brick: {}".format(brick[dataKey][idKey]))
+        if ((brick[dataKey][idKey] not in ignored) and
+            (brick[lowCoord][zCoord] != 1)):
+            supportedBy = supportedByBricks(brick,pile)
+            # pd("supportedBy count: {}".format(len(supportedBy)))
+
+            supported = False
+            for supportBrick in supportedBy:
+                if supportBrick[dataKey][idKey] not in ignored:
+                    supported = True
+                    break
+            if not supported:
+                # pd("not supported")
+                result.append(brick[dataKey][idKey])
+
+    # pd("result count: {}".format(len(result)))
+    return result
+
+def whatWillFallIfRemoved(brick,pile):
+    result = []
+    if fallKey in brick[dataKey]:
+        result = brick[dataKey][fallKey]
+
+    else:
+        ignore = [brick[dataKey][idKey]]
+        # pd("ignore count: {}".format(len(ignore)))
+
+        directSupport = bricksSupportedBy(brick,pile)
+        # pd("directSupport count: {}".format(len(directSupport)))
+
+        for directSupportBrick in directSupport:
+            if bricksSupportedByCount(directSupportBrick,pile) == 1:
+            # IF ONLY SUPPORTED BY THIS
+                thisFall = whatWillFallIfRemoved(directSupportBrick,pile)
+                if len(thisFall) > 0:
+                    result.extend(thisFall)
+                    ignore.extend(thisFall)
+
+        while True:
+            newFallList = findBricksWithNoSupport(pile,ignore)
+            # pd("newFallList count: {}".format(len(newFallList)))
+            if len(newFallList) > 0:
+                result.extend(newFallList)
+                ignore.extend(newFallList)
+            else:
+                break
+        
+        brick[dataKey][fallKey] = list(set(result))
+    
+    return result
+
+def pdBrick(brick):
+    pd(' {} -> [[{:3d},{:3d},{:3d}],'.format(brick[dataKey][labelKey],brick[lowCoord][xCoord],brick[lowCoord][yCoord],brick[lowCoord][zCoord]))
+    pd('        [{:3d},{:3d},{:3d}]]'.format(brick[highCoord][xCoord],brick[highCoord][yCoord],brick[highCoord][zCoord]))
+
+
+def pdPile(pile):
+    pd('[')
+    for brick in pile:
+        pdBrick(brick)
+    pd(']')
+        
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+originalPile = parseInput(sourceInput)
+# pd("original")
+# pdPile(originalPile)
+
+mainPile = sortedPile(originalPile)
+pd("sorted")
+# pdPile(mainPile)
+
+droppedPile = []
+for brick in mainPile:
+    dropBrickOnPile(brick, droppedPile)
+
+# pd("dropped")
+# pdPile(droppedPile)
+
+removable = findRemovable(droppedPile)
+# # pdPile(removable)
+
+# p(len(removable))
+
+total = 0
+counter = len(droppedPile)
+for brick in droppedPile: #[-3:-2]:
+    willFall = whatWillFallIfRemoved(brick,droppedPile)
+
+    thisCount = len(willFall)
+    total += thisCount
+
+    pd("{}: id: {} count: {}".format(counter, brick[dataKey][idKey], thisCount))
+    counter-=1
+
+p(total)
+
+# pd(droppedPile)
+    

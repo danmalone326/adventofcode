@@ -17,3 +17,4 @@ if [ ! -e $newPath/part1 ]; then
 fi
 touch $newPath/testInput
 touch $newPath/input
+touch $newPath/notes.txt
