@@ -1,0 +1,295 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+directions = ['>','<','^','v']
+oppositeDirection = {
+    '<':'>',
+    '>':'<',
+    '^':'v',
+    'v':'^'
+}
+
+pathChars = ['.'] + directions
+
+def getMapChar(x,y,map):
+    return map[y][x]
+
+posKey = 'pos'
+idKey = 'id'
+pathsKey = 'paths'
+stepsKey = 'steps'
+destKey = 'dest'
+dirKey = 'dir'
+
+def makePath(destination = None,steps = None):
+    path = {
+        destKey: destination,
+        stepsKey: steps
+    }
+    return path
+
+def makeJunction(x,y):
+    junction = {
+        posKey: [x,y],
+        idKey: '{},{}'.format(x,y),
+        pathsKey: {}
+    }
+    return junction
+
+def getPossibleDirections(x,y,map):
+    directions = []
+    if getMapChar(x-1,y,map) in pathChars:
+        directions.append('<')
+    if getMapChar(x+1,y,map) in pathChars:
+        directions.append('>')
+    if getMapChar(x,y-1,map) in pathChars:
+        directions.append('^')
+    if getMapChar(x,y+1,map) in pathChars:
+        directions.append('v')
+
+    return directions
+
+def findJunctions(map):
+    junctions = []
+
+    startX = map[0].find('.')
+    startJunction = makeJunction(startX,0)
+    startJunction[idKey] = 'start'
+    startJunction[pathsKey]['v'] = None
+    junctions.append(startJunction)
+
+    endX = map[-1].find('.')
+    endJunction = makeJunction(endX,len(map)-1)
+    endJunction[idKey] = 'end'
+    junctions.append(endJunction)
+
+    for y in range(1,len(map)-1):
+        for x in range(1,len(map[0])-1):
+            mapChar = getMapChar(x,y,map)
+            if mapChar in pathChars:
+                directions = getPossibleDirections(x,y,map)
+                
+                if len(directions) > 2:
+                    thisJunction = makeJunction(x,y)
+                    for d in directions:
+                        thisJunction[pathsKey][d] = None
+                    junctions.append(thisJunction)
+
+    return junctions
+
+def getJunction(x,y,junctions):
+    junction = None
+    for j in junctions:
+        if x == j[posKey][0] and y == j[posKey][1]:
+            junction = j
+            break
+    return junction
+
+def getJunctionByID(id,junctions):
+    junction = None
+    for j in junctions:
+        if id == j[idKey]:
+            junction = j
+            break
+    return junction
+
+
+def stepDirection(x,y,dir):
+    newX = x
+    newY = y
+    if dir == '>':
+        newX += 1
+    elif dir == '<':
+        newX -= 1
+    elif dir == '^':
+        newY -= 1
+    elif dir == 'v':
+        newY += 1
+    else:
+        raise ValueError
+    
+    return [newX,newY]
+
+def followPath(startX,startY,startDir,map,junctions):
+    path = None
+
+    x = startX
+    y = startY
+    dir = startDir
+    steps = 0
+    
+    done = False
+    foundJunction = None
+    while not done:
+        x,y = stepDirection(x,y,dir)
+        steps += 1
+        # pd('x,y: {},{}  dir: {}  steps: {}'.format(x,y,dir,steps))
+
+        foundJunction = getJunction(x,y,junctions)
+        if foundJunction:
+            done = True
+            break
+        else:
+            mapChar = getMapChar(x,y,map)
+
+            # walked into forest, can't walk here
+            if mapChar not in pathChars:
+                done = True
+                break
+            else:
+                mapChar = '.'
+
+            # if trying to step up a slope
+            if mapChar == oppositeDirection[dir]:
+                done = True
+                break
+
+            # find next step direction
+            else:
+                # if this is a slope
+                if mapChar in directions:
+                    dir = mapChar
+
+                # otherwise we need to find it 
+                else:
+                    possibleDirections = getPossibleDirections(x,y,map)
+                    possibleDirections.remove(oppositeDirection[dir])
+                    if len(possibleDirections) == 1:
+                        dir = possibleDirections[0]
+                    
+                    # this must be a dead end
+                    else:
+                        done = True
+                        break
+
+    if foundJunction:
+        path = makePath(foundJunction[idKey],steps)
+
+    return path
+
+def followJunctionPaths(junction,map,junctions):
+    pathKeys = list(junction[pathsKey].keys())
+    for startDir in pathKeys:
+        path = followPath(junction[posKey][0],junction[posKey][1],startDir,map,junctions)
+
+        if path:
+            junction[pathsKey][startDir] = path
+        else:
+            del junction[pathsKey][startDir]
+
+def followAllJunctionPaths(map,junctions):
+    for junction in junctions:
+        followJunctionPaths(junction,map,junctions)
+
+
+hikeDistances = []
+def findHikes(fromJunctionID='start',stepsSoFar=0,beenHere=''):
+    global junctions, hikeDistances
+    if fromJunctionID == 'end':
+        hikeDistances.append(stepsSoFar)
+
+    else:
+        j = getJunctionByID(fromJunctionID,junctions)
+        for pathDir in j[pathsKey]:
+            thisPath = j[pathsKey][pathDir]
+            if thisPath[destKey] not in beenHere.split('|'):
+                findHikes(thisPath[destKey],stepsSoFar+thisPath[stepsKey],beenHere + '|' + fromJunctionID)
+
+
+def parseInput(input):
+    data = input
+    return data
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+map = parseInput(sourceInput)
+# pd(map)
+
+junctions = findJunctions(map)
+
+# p(junctions)
+p(len(junctions))
+
+followAllJunctionPaths(map,junctions)
+# p(junctions)
+
+findHikes()
+
+p(hikeDistances)
+p(max(hikeDistances))

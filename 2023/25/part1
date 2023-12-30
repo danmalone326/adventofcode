@@ -1,0 +1,240 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def normalizeWireID(n1,n2):
+    s = sorted([n1,n2])
+    return '{}-{}'.format(s[0],s[1])
+
+connKey = 'conn'
+pathToKey = 'dir'
+distanceKey = 'dis'
+nextKey = 'next'
+
+def initComponent(data,component):
+    keyInit(data,component,{})
+    keyInit(data[component],connKey,[])
+    keyInit(data[component],pathToKey,{})
+
+def parseInput(input):
+    data = {}
+    data2 = []
+    for line in input:
+        leftComponent,rightComponents = line.split(': ')
+        initComponent(data,leftComponent)
+        for rightComponent in rightComponents.split():
+            initComponent(data,rightComponent)
+            data[leftComponent][connKey].append(rightComponent)
+            data[rightComponent][connKey].append(leftComponent)
+            data2.append(normalizeWireID(rightComponent,leftComponent))
+        
+    return data, data2
+
+# def findShortestPath(n1,n2,visited=''):
+#     global components
+
+#     result = None
+
+#     if n2 in components[n1][pathToKey]:
+#         result = components[n1][pathToKey][n2][distanceKey]
+
+#     elif n2 in components[n1][connKey]:
+#         result = 1
+#         keyInit(components[n1][pathToKey],n2,{})
+#         keyInit(components[n1][pathToKey][n2],distanceKey,1)
+#         keyInit(components[n1][pathToKey][n2],nextKey,n2)
+
+#     else:
+#         shortestDistance = sys.maxsize,
+#         shortestNextNode = None
+        
+#         for nextNode in components[n1][connKey]:
+#             if nextNode not in visited:
+#                 thisDistance = findShortestPath(nextNode,n2,visited+n1)
+#                 if thisDistance and thisDistance < shortestDistance:
+#                     shortestDistance = thisDistance
+#                     shortestNextNode = nextNode
+
+#         if shortestNextNode:
+#              pass
+#     return result
+
+def addUpdateDirection(comp, compID, destCompID, dist, nextCompID):
+    if destCompID in comp[compID][pathToKey]:
+        comp[compID][pathToKey][destCompID][distanceKey] = dist
+        comp[compID][pathToKey][destCompID][nextKey] = nextCompID
+    else:
+        keyInit(comp[compID][pathToKey],destCompID,{})
+        keyInit(comp[compID][pathToKey][destCompID],distanceKey,dist)
+        keyInit(comp[compID][pathToKey][destCompID],nextKey,nextCompID)
+
+def findAllPaths(comp):
+    iteration = 0
+    done = False
+    try:
+        while not done:
+            # pd('#')
+            # pd(components)
+            # wait()
+            iteration += 1
+            done = True
+
+            for thisCompID in comp.keys():
+                thisComponent = comp[thisCompID]
+                # pd('thisCompID: {}'.format(thisCompID))
+                
+                if len(thisComponent[pathToKey].keys()) == 0:
+                    # pd('zeros {}'.format(iteration))
+                    addUpdateDirection(comp,thisCompID,thisCompID,0,thisCompID)
+                    done = False
+
+                # for each of my connections
+                for nextCompID in thisComponent[connKey]:
+                    # get the list of paths that component knows about
+                    nextComponent = comp[nextCompID]
+                    for nextPathID in nextComponent[pathToKey]:
+                        nextPath = nextComponent[pathToKey][nextPathID]
+                        nextDirectionDistance = nextPath[distanceKey]
+                        # pd('nextCompID: {} nextDirectionID: {} nextDist: {}'.format(nextCompID,nextPathID,nextDirectionDistance))
+                        # if (nextPathID in thisComponent[pathToKey]):
+                        #     pd(thisComponent[pathToKey][nextPathID][distanceKey])
+                        if (nextPathID not in thisComponent[pathToKey] or 
+                            (nextPath[nextKey] != thisCompID and
+                            ((nextDirectionDistance+1) < thisComponent[pathToKey][nextPathID][distanceKey]))
+                        ):
+                            # pd('next {} dist {} '.format(iteration,nextDirectionDistance))
+                            addUpdateDirection(comp,thisCompID,nextPathID,nextDirectionDistance+1,nextCompID)
+                            done = False
+    except KeyboardInterrupt:
+        pass
+
+    pd(iteration)                         
+            
+def getMostUsedPaths(comp):
+    global wires
+
+    useCount = {}
+    for w in wires:
+        keyInit(useCount,w,0)
+
+    for compID in comp:
+        thisComponent = comp[compID]
+        for pathID in thisComponent[pathToKey]:
+            thisPath = thisComponent[pathToKey][pathID]
+            thisPathNextID = thisPath[nextKey]
+            if compID != thisPathNextID:
+                useCount[normalizeWireID(compID,thisPathNextID)] += 1
+
+    sortedUseCount = sorted(useCount.items(),key=lambda x: x[1], reverse=True)
+    return sortedUseCount[0:3]
+    
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+components, wires = parseInput(sourceInput)
+# pd(components)
+# pd(wires)
+
+finderComponents = copy.deepcopy(components)
+
+findAllPaths(finderComponents)
+
+# pd(components['xhk'])
+
+mostUsedWires = getMostUsedPaths(finderComponents)
+
+splitComponents = copy.deepcopy(components)
+
+for removeThis in mostUsedWires:
+    thisWire = removeThis[0]
+    a,b = thisWire.split('-')
+    splitComponents[a][connKey].remove(b)
+    splitComponents[b][connKey].remove(a)
+
+findAllPaths(splitComponents)
+
+total = len(splitComponents.keys())
+aCount = len(splitComponents[list(splitComponents.keys())[0]][pathToKey].keys())
+bCount = total - aCount
+
+answer = aCount * bCount
+
+# p(mostUsedWires[0][0].split('-'))
+# p(splitComponents['jqt'])
+
+p(answer)

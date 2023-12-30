@@ -1,0 +1,107 @@
+
+y = mx + b
+m = dy / dx
+b = y - mx
+
+mx1 - y1 + b1 = 0
+mx2 - y2 + b2 = 0
+
+intersection
+a1x+b1y+c1=0
+a2x+b2y+c2=0
+x=(b1c2-b2c1)/(a1b2-a2b1)
+y=(c1a2-c2a1)/(a1b2-a2b1)
+
+a = m
+b = -1
+c = b (ugh!)
+
+x = b1-b2 / m2-m1
+y = b1*m2-b2*m1 / m2-m1
+
+part 2:
+take some that do not cross and solve
+
+vector form
+(x,y,z)=(x0,y0,z0)+t(a,b,c)
+
+parametric form
+x=X0+t0A0
+y=Y0+t0B0
+z=Z0+t0C0
+
+take 3 of the hailstones
+
+x=x1+t1a1
+y=y1+t1b1
+z=z1+t1c1
+
+at t1: (and t2, t3) (and for y and z)
+Rx + Rdx*t1 = H1x + H1dx*t1
+solve for t1
+t1 = (H1x - Rx) / (Rdx - H1dx)
+solve for Rx on t2
+Rx = H2x + (H2dx - Rdx)*t2
+solve for Rdx on t3
+Rdx = ((H3x - Rx) / t3) + H3dx
+
+assume t1 = t0
+Rx = H1x
+t2 = (H2x - H1x) / (Rdx - H2dx)
+t3 = (H3x - H1x) / (Rdx - H3dx)
+
+Rdx = ((H3x - H1x) / t3) + H3dx
+t2 = (H2x - H1x) / (((H3x - H1x) / t3) + H3dx - H2dx)
+
+then same for y
+t2 = (H2y - H1y) / (((H3y - H1y) / t3) + H3dy - H2dy)
+
+t2 = t2
+(((H3y - H1y) / t3) + H3dy - H2dy) * (H2x - H1x) = 
+(((H3x - H1x) / t3) + H3dx - H2dx) * (H2y - H1y)
+
+(((H3y - H1y) * (H2x - H1x)) / t3) + ((H3dy - H2dy) * (H2x - H1x)) = 
+(((H3x - H1x) * (H2y - H1y)) / t3) + ((H3dx - H2dx) * (H2y - H1y))
+
+(((H3y - H1y) * (H2x - H1x)) / t3) - (((H3x - H1x) * (H2y - H1y)) / t3) = 
+(((H3dx - H2dx) * (H2y - H1y)) - ((H3dy - H2dy) * (H2x - H1x)))
+
+t3 = (((H3y - H1y) * (H2x - H1x)) - ((H3x - H1x) * (H2y - H1y))) / (((H3dx - H2dx) * (H2y - H1y)) - ((H3dy - H2dy) * (H2x - H1x)))
+
+now we have t1dx = 0, t2dx and t3dx
+these are deltas from t1 NOT t0
+but we can get Rdx, Rdy, and Rdz
+
+t3 = (H3x - H1x) / (Rdx - H3dx)
+Rdx = ((H3dx - H1x) / t3) + H3dx
+Rdy = ((H3dy - H1y) / t3) + H3dy
+Rdz = ((H3dz - H1z) / t3) + H3dz
+
+
+Went down the route of finding the highest prime factor in the deltas, but that didn't pan out.
+606940229813538 too low
+
+back to algebra
+figuring out how to use sympy
+
+here's the main equation:
+Rx + Rdx*t1 = H1x + H1dx*t1
+
+we have 6 variables we don't know, R(x,y,z) and Rd(x,y,z)
+so we need 6 equations to find the 6 variables
+however, when we add one hailstone, we add one more variable, t
+so, we need more equations, 9 to be exact which is 3 hailstones
+we get 3 equations for each hailstone we add, one for each x, y, and z
+
+sympy also like equations that equal 0 so we end up with:
+Rx + Rdx*t1 - H1x + H1dx*t1 = 0
+Ry + Rdy*t1 - H1y + H1dy*t1 = 0
+Rz + Rdz*t1 - H1z + H1dz*t1 = 0
+Rx + Rdx*t2 - H2x + H2dx*t2 = 0
+Ry + Rdy*t2 - H2y + H2dy*t2 = 0
+Rz + Rdz*t2 - H2z + H2dz*t2 = 0
+Rx + Rdx*t3 - H3x + H3dx*t3 = 0
+Ry + Rdy*t3 - H3y + H3dy*t3 = 0
+Rz + Rdz*t3 - H3z + H3dz*t3 = 0
+
+once I figured out how to use sympy, it worked...

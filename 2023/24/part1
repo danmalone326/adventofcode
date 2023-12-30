@@ -1,0 +1,186 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = []
+    for line in input:
+        point = [line]
+        point.extend([[int(n) for n in pos.split(', ')] for pos in line.split(' @ ')])
+
+        # add slope (m) and y intercept (b)
+        if point[delta][x] == 0:
+            m = None
+            b = None
+        else:
+            m = point[delta][y] / point[delta][x]
+            b = point[startPoint][y] - m * point[startPoint][x]        
+        point.extend([m,b])
+
+        data.append(point)
+    return data
+
+def pdHailstone(h, label=None):
+    pd("Hailstone {}: {}".format(label,h[orig]))
+
+def findXYIntersection(p1, p2):
+    result = None
+    if (p1[m] and p2[m]):
+        if (p1[m] == p2[m]):
+            if (p1[b] == p2[b]):
+                x=boundaryLow
+                y = p1[m]*x + p1[b]
+                result = [x,y]
+        else:
+            x = (p1[b] - p2[b]) / (p2[m] - p1[m])
+            y = (p1[b]*p2[m] - p2[b]*p1[m]) / (p2[m] - p1[m])
+            result = [x,y]
+    elif (p1[m]):
+        x = p2[startPoint][x]
+        y = p1[m]*x + p1[b]
+        result = [x,y]
+    elif (p2[m]):
+        x = p1[startPoint][x]
+        y = p2[m]*x + p2[b]
+        result = [x,y]
+    else:
+        if p1[x] == p2[x]:
+            x = p1[x]
+            y = boundaryLow
+            result = [x,y]
+    return result
+    
+def countXYIntersections(hailstones):
+    count = 0
+
+    for i in range(len(hailstones)):
+        for j in range(i+1,len(hailstones)):
+            hA = hailstones[i]
+            hB = hailstones[j]
+            # pdHailstone(hA,'A')
+            # pdHailstone(hB,'B')
+            pIntersect = findXYIntersection(hA,hB)
+            # pd(pIntersect)
+            intersect = True
+            if not (
+                pIntersect and
+                boundaryLow <= pIntersect[x] <= boundaryHigh and
+                boundaryLow <= pIntersect[y] <= boundaryHigh):
+                intersect = False
+                # pd('outside')
+            else:
+                for hTest in [hA,hB]:
+                    for coord in [x,y]:
+                        coordTest = pIntersect[coord] - hTest[startPoint][coord]
+                        deltaTest = hTest[delta][coord]
+                        # pd("coord: {} coordTest: {} deltaTest: {}".format(coord,coordTest,deltaTest))
+                        if (coordTest == 0 and deltaTest == 0):
+                            pass
+                        elif (coordTest == 0 or deltaTest == 0):
+                            intersect = False
+                        elif coordTest/abs(coordTest) != deltaTest/abs(deltaTest):
+                            intersect = False
+            if intersect:
+                # pd("count me!")
+                count += 1
+    
+    return count
+
+orig = 0
+startPoint = 1
+delta = 2
+m = 3
+b = 4
+
+x = 0
+y = 1
+z = 2
+
+boundaryLow = 200000000000000
+boundaryHigh = 400000000000000
+
+# boundaryLow = 7
+# boundaryHigh = 27
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+hailstones = parseInput(sourceInput)
+# pd(points)
+
+count = countXYIntersections(hailstones)
+p(count)
