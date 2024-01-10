@@ -5,21 +5,12 @@ import json
 import math
 import re
 import copy
-from datetime import datetime
-import itertools
 
 debug=True
-
-def p(obj,timePrefix = False):
-    if timePrefix:
-        now = datetime.now()
-        print('{}: '.format(str(now.time()).split('.')[0]),end="")
-
+def p(obj):
     if type(obj) in [str,int]:
         print(obj)
     else:
-        if timePrefix:
-            print('')
         print(json.dumps(obj, indent=2))
 
 def pd(obj):
@@ -85,6 +76,29 @@ def parseInput(input):
     data = arrayOfIntFromCSV(input[0])
     return data
 
+def posKey(x,y):
+    return '{}-{}'.format(x,y)
+
+def recordPos(mapCount,x,y):
+    key = posKey(x,y)
+    keyInit(mapCount,key,0)
+    mapCount[key] += 1
+
+def getPos(mapCount,x,y):
+    key = posKey(x,y)
+    return mapCount[key]
+
+move = {
+    '^': [0,-1],
+    'v': [0,1],
+    '<': [-1,0],
+    '>': [1,0]
+}
+def movePos(x,y,dir):
+    newX = x + move[dir][0]
+    newY = y + move[dir][1]
+    return newX, newY
+
 debug = True
 
 sourceInput = getInput()
@@ -92,7 +106,16 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+data = sourceInput
 
-p(1)
+for line in data:
+    santaCount = {}
+    x = 0
+    y = 0
+    recordPos(santaCount,x,y)
+    for dir in line:
+        x, y = movePos(x,y,dir)
+        recordPos(santaCount,x,y)
+
+    p(len(santaCount))
+

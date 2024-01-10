@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -82,7 +81,7 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = input
     return data
 
 debug = True
@@ -93,6 +92,13 @@ sourceInput = getInput()
 # p(data)
 
 data = parseInput(sourceInput)
-pd(data)
 
-p(1)
+
+for line in data:
+    total = 0
+    p(line)
+    result = re.findall(r'((?:[-\d]+)+)',line)
+    if result:
+        for numStr in result:
+            total += int(numStr)
+    p(total)

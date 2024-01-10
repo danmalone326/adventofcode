@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -82,7 +81,7 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = [int(x) for x in input]
     return data
 
 debug = True
@@ -94,5 +93,31 @@ sourceInput = getInput()
 
 data = parseInput(sourceInput)
 pd(data)
+p(len(data))
 
-p(1)
+l=len(data)
+i=2**l
+count = 0
+min = sys.maxsize
+minCount = 0
+while i>0:
+    i-=1
+    si = ("{0:0"+str(l)+"b}").format(i)
+    # p(si)
+    idx = [x.start() for x in re.finditer('1', si)]
+
+    sum = 0
+    for n in idx:
+        sum += data[n]
+
+    if sum == 150:
+        count += 1
+        if len(idx) < min:
+            min = len(idx)
+            minCount = 1
+        elif len(idx) == min:
+            minCount += 1
+
+p(count)
+p(min)
+p(minCount)

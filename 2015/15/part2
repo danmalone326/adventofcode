@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -82,8 +81,45 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
-    return data
+    ingredients = []
+    for line in input:
+        thisP = {}
+        itemName = line.split(':')[0]
+        for property in line.split(': ')[1].split(', '):
+            p,i = property.split()
+            thisP[p] = int(i)
+        ingredients.append(thisP)
+
+    return ingredients
+
+maxSum = 100
+def incCombo(iList,index=None):
+    global maxSum
+
+    lastIndex = len(iList)-1
+
+    if index is None:
+        i = lastIndex
+    else:
+        i = index
+
+    result = True
+    if (i == 0):
+        iList[i] += 1
+        if iList[i] > maxSum:
+            result = False
+    elif (i == lastIndex):
+        result = incCombo(iList,len(iList)-2)
+        iList[-1] = maxSum - sum(iList[0:-1])
+    else:
+        iList[i] += 1
+        remain = maxSum - sum(iList[0:i])
+        if iList[i] > remain:
+            result = incCombo(iList,i-1)
+            iList[i] = 1
+        
+    return result
+
 
 debug = True
 
@@ -93,6 +129,38 @@ sourceInput = getInput()
 # p(data)
 
 data = parseInput(sourceInput)
-pd(data)
+# pd(data)
 
-p(1)
+# initialize first combo
+ingrAmount = [1] * len(data)
+ingrAmount[-1] = maxSum - sum(ingrAmount[0:-1])
+
+count = 0
+maxScore = 0
+while True:
+    # p(str(a))
+    count += 1
+
+    score = 1
+    for prop in data[0].keys():
+        thisProp = 0
+        calories = 0
+        for ingrIndex in range(len(data)):
+            thisProp += ingrAmount[ingrIndex] * data[ingrIndex][prop]
+        if thisProp <= 0:
+            score = 0
+            break
+        elif prop == 'calories':
+            calories = thisProp
+        else:
+            score *= thisProp
+
+    if calories == 500 and score > maxScore:
+        maxScore = score
+        p(str(ingrAmount))
+        p(score)
+
+    if not incCombo(ingrAmount):
+        break
+
+p(count)

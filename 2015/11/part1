@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 

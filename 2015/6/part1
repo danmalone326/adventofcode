@@ -5,21 +5,12 @@ import json
 import math
 import re
 import copy
-from datetime import datetime
-import itertools
 
 debug=True
-
-def p(obj,timePrefix = False):
-    if timePrefix:
-        now = datetime.now()
-        print('{}: '.format(str(now.time()).split('.')[0]),end="")
-
+def p(obj):
     if type(obj) in [str,int]:
         print(obj)
     else:
-        if timePrefix:
-            print('')
         print(json.dumps(obj, indent=2))
 
 def pd(obj):
@@ -81,8 +72,33 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
+actionKey = 'action'
+lowPos = 'low'
+highPos = 'high'
+xCoord = 0
+yCoord = 1
+
+
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = []
+    for line in input:
+        thisRange = {}
+        splitLine = line.split()
+        if splitLine[0] == 'turn':
+            splitLine.pop(0)
+        
+        action = splitLine[0]
+        a = [int(k) for k in splitLine[1].split(',')]
+        b = [int(k) for k in splitLine[3].split(',')]
+        low = [min(a[xCoord],b[xCoord]),min(a[yCoord],b[yCoord])]
+        high = [max(a[xCoord],b[xCoord]),max(a[yCoord],b[yCoord])]
+
+        thisRange[actionKey] = action
+        thisRange[lowPos] = low
+        thisRange[highPos] = high
+
+        data.append(thisRange)
+
     return data
 
 debug = True
@@ -93,6 +109,44 @@ sourceInput = getInput()
 # p(data)
 
 data = parseInput(sourceInput)
-pd(data)
 
-p(1)
+grid = [0] * 1000
+# pd(data)
+
+allOnes = (2 ** 1000) - 1
+
+for i in range(len(data)):
+    thisRange = data[i]
+    action = thisRange[actionKey]
+    low = thisRange[lowPos]
+    high = thisRange[highPos]
+
+    numBits = high[xCoord] - low[xCoord] + 1
+    shift = low[xCoord]
+
+    bitRep = (2 ** numBits) - 1 << shift
+    if action == 'off':
+        bitRep = allOnes ^ bitRep
+
+    for row in range(low[yCoord],high[yCoord]+1):
+        if action == 'on':
+            grid[row] = grid[row] | bitRep
+        elif action == 'toggle':
+            grid[row] = grid[row] ^ bitRep
+        elif action == 'off':
+            grid[row] = grid[row] & bitRep
+
+    
+count = 0
+for thisRow in grid:
+    count += thisRow.bit_count()
+
+p(count)
+
+# x=2**5 - 1 << 4
+# y=2**3 - 1 << 5
+# p(format(x,'020b'))
+# p(format(y,'020b'))
+# p(format(x^y,'020b'))
+# p((x^y).bit_count())
+# p(1)

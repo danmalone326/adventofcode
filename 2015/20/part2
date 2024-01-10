@@ -6,7 +6,7 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
+import sympy
 
 debug=True
 
@@ -85,6 +85,43 @@ def parseInput(input):
     data = arrayOfIntFromCSV(input[0])
     return data
 
+def factors(x):
+    if x==1: 
+        result = [1]
+    else:
+        result = [1,x]
+    for i in range(2,math.ceil(x/2)+2):
+        if x % i == 0:
+            result.append(i)
+    return result
+
+def packagesAtHouse1(h):
+    primeFactors = sympy.factorint(h)
+    remaining = h
+
+    totalCount = 1
+    for factorKey in primeFactors:
+        factor = int(factorKey)
+        count = 0
+        for power in range(0,primeFactors[factorKey]+1):
+            count += (factor ** power)
+            # remaining //= factor
+        totalCount *= count
+
+    totalCount *= 10
+    return totalCount
+
+def packagesAtHouse(h):
+    divisors = sympy.divisors(h)
+    
+    count = 0
+    for divisor in divisors:
+        if divisor*50 >= h:
+            count += divisor
+
+    count *= 11
+    return count
+
 debug = True
 
 sourceInput = getInput()
@@ -92,7 +129,38 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+data = int(sourceInput[0])
+# pd(data)
+# data = int(data/10)
 
-p(1)
+# p(factors(data))
+
+# p(sympy.factorint(data))
+
+house = 500000
+iteration = 0
+count = 0
+while iteration < 1000000 and count < data:
+    iteration += 1
+    house += 1
+    count = packagesAtHouse(house)
+    if house % 1000 == 0:
+        p('{}: {}'.format(house,count),timePrefix=True)
+
+# x = 0
+# house = 1
+# remaining = 10
+
+# while remaining > 0:
+#     # x += 1
+#     house += 1
+#     remaining -= 1
+#     p('{}: {}'.format(house,packagesAtHouse(house)))
+
+
+# p(factors(house))
+
+p(house)
+p(count)
+# p(sympy.divisors(house))
+# p(1)

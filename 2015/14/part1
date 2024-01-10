@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -82,7 +81,14 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = []
+    for line in input:
+        splitLine = line.split()
+        name = splitLine[0]
+        speed = int(splitLine[3])
+        travelDuration = int(splitLine[6])
+        restDuration = int(splitLine[13])
+        data.append([name,speed,travelDuration,restDuration])
     return data
 
 debug = True
@@ -95,4 +101,19 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+raceDuration = 2503
+distances = []
+for r in data:
+    thisDistance = 0
+    name, speed, travelDuration, restDuration = r
+    cycleDuration = travelDuration + restDuration
+    fullCycles = math.floor(raceDuration/cycleDuration)
+    remainingDuration = raceDuration % cycleDuration
+    if remainingDuration > travelDuration:
+        remainingDuration = travelDuration
+    
+    thisDistance += (fullCycles * travelDuration + remainingDuration) * speed
+
+    distances.append(thisDistance)
+
+p(max(distances))

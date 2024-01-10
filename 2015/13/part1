@@ -81,8 +81,35 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
+def nKey(p1,p2):
+    return '{}-{}'.format(min(p1,p2),max(p1,p2))
+
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = {
+        "d1": [],
+        "d2": {},
+        "pList": []
+    }
+
+    for line in input:
+        splitLine = line.split()
+        p1 = splitLine[0]
+        units = int(splitLine[3])
+        if splitLine[2] == 'lose':
+            units = -units
+        p2 = splitLine[-1][0:-1]
+
+        data['d1'].append([p1,p2,units])
+        data['pList'].extend([p1,p2])
+
+    data['pList'] = list(set(data['pList']))
+
+    for d in data['d1']:
+        key = nKey(d[0],d[1])
+        keyInit(data['d2'],key,0)
+        data['d2'][key] += d[2]
+
+
     return data
 
 debug = True
@@ -95,4 +122,14 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+hTotals = []
+for thisOrder in itertools.permutations(data['pList']):
+    thisSum = 0
+    for i in range(len(thisOrder)-1):
+        thisSum += data['d2'][nKey(thisOrder[i],thisOrder[i+1])]
+    # thisSum += data['d2'][nKey(thisOrder[0],thisOrder[-1])]
+    hTotals.append(thisSum)
+    # p(str(thisOrder))
+    # p(thisSum)
+
+p(max(hTotals))

@@ -1,0 +1,180 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = []
+    for line in input:
+        c1, t1, c2, t2, d = line.split()
+        data.append([c1,c2,int(d)])
+    return data
+
+nameKey = 'name'
+routesKey = 'routes'
+nextKey = 'next'
+distanceKey = 'distance'
+
+def newCity(c):
+    thisCity = {
+        nameKey: c,
+        routesKey: {}
+    }
+    return thisCity
+
+def newRoute(n,d):
+    thisRoute = {
+        nextKey: n,
+        distanceKey: d
+    }
+    return thisRoute
+
+routes = []
+def findRoutes(currentRoute, currentDistance):
+    currentRouteKeys = currentRoute.split(',')
+
+    foundAll = True
+    for key in cities.keys():
+        if key not in currentRouteKeys:
+            foundAll = False
+            break
+
+    if foundAll:
+        routes.append([currentRoute,currentDistance])
+        return
+    
+    currentKey = currentRouteKeys[-1]
+    for nextKey in cities[currentKey][routesKey].keys():
+        if nextKey not in currentRouteKeys:
+            findRoutes(
+                currentRoute + ',' + nextKey,
+                currentDistance + cities[currentKey][routesKey][nextKey][distanceKey])
+    
+
+
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+# pd(data)
+
+# setup structure and add direct connections to routes
+cities = {}
+for route in data:
+    c1, c2, d = route
+    if c1 not in cities:
+        cities[c1] = newCity(c1)
+    if c2 not in cities:
+        cities[c2] = newCity(c2)
+
+    cities[c1][routesKey][c2] = newRoute(c2,d)
+    cities[c2][routesKey][c1] = newRoute(c1,d)
+
+# # find shortest route to/from all
+# passCount = 0
+# changes = True
+# while changes:
+#     passCount += 1
+#     p(passCount)
+#     changes = False
+#     for thisCity in cities.keys():
+#         thisRoutes = cities[thisCity][routesKey]
+#         for thisRouteDest in thisRoutes.keys():
+#             # only use direct routes here for shortest distance determination
+#             if thisRouteDest == thisRoutes[thisRouteDest][nextKey]:
+#                 nextRoutes = cities[thisRouteDest][routesKey]
+#                 for nextRouteDest in nextRoutes.keys():
+#                     # don't need to follow routes that come back here
+#                     if nextRoutes[nextRouteDest][nextKey] != thisCity:
+#                         if (nextRouteDest not in thisRoutes):
+#                             pass
+#                         elif (nextRoutes[nextRouteDest][distanceKey] + thisRoutes[thisRouteDest][distanceKey] < thisRoutes[nextRouteDest][distanceKey]):
+#                             thisRoutes[nextRouteDest] = newRoute(thisRouteDest,nextRoutes[nextRouteDest][distanceKey] + thisRoutes[thisRouteDest][distanceKey])
+#                             changes = True
+
+
+# p(cities)
+    
+for key in cities.keys():
+    findRoutes(key,0)
+
+
+
+routes.sort(key=lambda x: x[1])
+p(routes[-1])
+
+# p(1)

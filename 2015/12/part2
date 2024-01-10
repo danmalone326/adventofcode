@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -82,8 +81,41 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = input
     return data
+
+def findCountList(l):
+    sum = 0
+    for item in l:
+        try:
+            sum += findCount(item)
+        except ZeroDivisionError:
+            pass
+    return sum
+
+def findCountDict(d):
+    sum = 0
+    try:
+        for key in d.keys():
+            sum += findCount(d[key])
+    except ZeroDivisionError:
+        sum = 0
+    return sum
+
+def findCount(obj):
+    count = 0
+    if isinstance(obj,dict):
+        count = findCountDict(obj)
+    elif isinstance(obj,list):
+        count = findCountList(obj)
+    elif isinstance(obj,int):
+        count = obj
+    elif isinstance(obj,str):
+        if obj == 'red':
+            1/0
+    return count
+
+    return count
 
 debug = True
 
@@ -93,6 +125,11 @@ sourceInput = getInput()
 # p(data)
 
 data = parseInput(sourceInput)
-pd(data)
 
-p(1)
+
+for line in data:
+    total = 0
+    p(line)
+    thisObj = json.loads(line)
+    total = findCount(thisObj)
+    p(total)

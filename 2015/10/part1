@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -22,9 +21,9 @@ def p(obj,timePrefix = False):
             print('')
         print(json.dumps(obj, indent=2))
 
-def pd(obj):
+def pd(obj,timePrefix = False):
     if debug:
-        p(obj)
+        p(obj,timePrefix)
 
 def wait():
     input("Press Enter to continue...")
@@ -82,8 +81,21 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = input
     return data
+
+def encodeStr(inStr):
+    pos = 0
+    result = ''
+
+    while pos < len(inStr):
+        match = re.search(r'^((.)\2{0,})',inStr[pos:])
+        group = match.group(1)
+        result += '{}{}'.format(len(group),group[0])
+        pos += len(group)
+
+    return result
+        
 
 debug = True
 
@@ -95,4 +107,12 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+thisStr = data[0]
+i = 50
+while i > 0:
+    p('remaining: {}'.format(i),timePrefix=True)
+    i -= 1
+    thisStr = encodeStr(thisStr)
+    # p(thisStr)
+
+p(len(thisStr))

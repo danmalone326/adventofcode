@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -82,8 +81,11 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
-    return data
+    bl = findBlankLine(input)
+
+    reps = list(line.split(' => ') for line in input[:bl])
+    mols = input[bl+1:]
+    return reps,mols
 
 debug = True
 
@@ -92,7 +94,17 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+replacements,molecules = parseInput(sourceInput)
 
-p(1)
+p(replacements)
+p(molecules)
+
+for m in molecules:
+    new = {}
+    for r in replacements:
+        rLen = len(r[0])
+        for i in ([x.start() for x in re.finditer(r[0], m)]):
+            thisNew = m[:i] + r[1] + m[i+rLen:]
+            new[thisNew] = True
+
+    p(len(new))

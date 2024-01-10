@@ -5,21 +5,12 @@ import json
 import math
 import re
 import copy
-from datetime import datetime
-import itertools
 
 debug=True
-
-def p(obj,timePrefix = False):
-    if timePrefix:
-        now = datetime.now()
-        print('{}: '.format(str(now.time()).split('.')[0]),end="")
-
+def p(obj):
     if type(obj) in [str,int]:
         print(obj)
     else:
-        if timePrefix:
-            print('')
         print(json.dumps(obj, indent=2))
 
 def pd(obj):
@@ -92,7 +83,14 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+totalPaper = 0
+totalRibbon = 0
+for line in sourceInput:
+    s1,s2,s3 = sorted([int(s) for s in line.split('x')])
+    thisPaper = 3*s1*s2 + 2*s1*s3 + 2*s2*s3
+    totalPaper += thisPaper
+    thisRibbon = 2*(s1+s2) + s1*s2*s3
+    totalRibbon += thisRibbon
 
-p(1)
+p(totalPaper) 
+p(totalRibbon)

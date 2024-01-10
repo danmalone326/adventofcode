@@ -1,0 +1,172 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+
+debug=True
+
+def p(obj,timePrefix = False):
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    weapons = []
+    bl = findBlankLine(input)
+    for line in input[1:bl]:
+        weapons.append([int(x) for x in line.split()[-3:]])
+
+    armor = []
+    abl = bl + 1
+    bl = findBlankLine(input[abl:]) + abl
+    for line in input[abl+1:bl]:
+        armor.append([int(x) for x in line.split()[-3:]])
+
+    rings = []
+    abl = bl + 1
+    bl = findBlankLine(input[abl:]) + abl
+    for line in input[abl+1:bl]:
+        rings.append([int(x) for x in line.split()[-3:]])
+
+    boss = []
+    abl = bl + 1
+    for line in input[abl:]:
+        boss.append(int(line.split(': ')[-1]))
+
+    return weapons, armor, rings, boss
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+
+
+weapons, armor, rings, boss = parseInput(sourceInput)
+armor.append([0,0,0]) # these are for the "choose nothing" option
+rings.append([0,0,0])
+ringCombinations = list(itertools.combinations(rings,2)) + [[[0,0,0],[0,0,0]]]
+# pd(weapons)
+# pd(armor)
+# pd(rings)
+# pd(boss)
+# pd('-')
+# pd(ringCombinations)
+
+bossHP = boss[0]
+bossDamage = boss[1]
+bossArmor = boss[2]
+
+myHP = 100
+
+# myHP/(bossDamage - myArmor) > bossHP/(myDamage - bossArmor)
+# myHP * (myDamage - bossArmor) > bossHP * (bossDamage - myArmor)
+#
+# you have 8 hit points, 5 damage, and 5 armor, and that the boss has 12 hit points, 7 damage, and 2 armor
+
+leastCost = sys.maxsize
+mostCost = 0
+
+for w in weapons:
+    for a in armor:
+        for rc in ringCombinations:
+            myCost = w[0] + a[0]
+            myDamage = w[1] + a[1]
+            myArmor = w[2] + a[2]
+
+            for r in rc:
+                myCost += r[0]
+                myDamage += r[1]
+                myArmor += r[2]
+
+            # p('c: {}  w: {}  a: {}  r1: {}  r2: {}'.format(myCost,w[0],a[0],rc[0][0],rc[1][0]))
+
+            myInflictedDamage = max(myDamage - bossArmor,1)
+            bossInflictedDamage = max(bossDamage - myArmor,1)
+            
+
+            if (myHP * myInflictedDamage >= bossHP * bossInflictedDamage):
+                # p('win')
+                if  (myCost < leastCost):
+                    leastCost = myCost
+            else:
+                # p('lose')
+                if (myCost > mostCost):
+                    mostCost = myCost
+
+
+p(leastCost)
+p(mostCost)

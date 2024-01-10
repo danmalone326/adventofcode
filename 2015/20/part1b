@@ -6,7 +6,7 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
+import sympy
 
 debug=True
 
@@ -85,6 +85,16 @@ def parseInput(input):
     data = arrayOfIntFromCSV(input[0])
     return data
 
+def factors(x):
+    if x==1: 
+        result = [1]
+    else:
+        result = [1,x]
+    for i in range(2,math.ceil(x/2)+2):
+        if x % i == 0:
+            result.append(i)
+    return result
+
 debug = True
 
 sourceInput = getInput()
@@ -92,7 +102,37 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
+data = int(sourceInput[0])
 pd(data)
+data = int(data)
 
-p(1)
+# p(factors(data))
+
+primes = [ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47 ]
+
+def solve(goal, prime_index = len(primes) - 1):
+    if prime_index < 0:
+        return goal
+
+    p = primes[prime_index]
+
+    p_power = 1 # power of p
+    p_sum = 1   # 1 + p + p^2 + ... + p_power
+
+    # try skipping this prime
+    best = solve(goal, prime_index - 1)
+
+    while p_sum < goal:
+        p_power = p_power * p
+        p_sum = p_sum + p_power
+
+        # subproblem: ceil(goal/p_sum) using only primes less than p
+        subgoal = (goal + p_sum - 1) // p_sum
+        best = min(best, p_power * solve(subgoal, prime_index - 1))
+
+    return best
+
+part1 = solve(data // 10)
+print(part1)
+
+# p(1)

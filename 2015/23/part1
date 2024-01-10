@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -81,9 +80,60 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
+insKey = 'ins'
+regKey = 'reg'
+offKey = 'off'
+
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = []
+    for line in input:
+        instruction, rest = line.split(' ',1)
+        thisLine = {
+            insKey: instruction
+        }
+        if instruction in ['hlf','tpl','inc']:
+            thisLine[regKey] = rest
+        elif instruction == 'jmp':
+            thisLine[offKey] = int(rest)
+        else:
+            thisLine[regKey], tempOffset = rest.split(', ')
+            thisLine[offKey] = int(tempOffset)
+
+        data.append(thisLine)
+
     return data
+
+def processInstruction():
+    global code, reg, insPtr
+
+    i = code[insPtr]
+
+    ins = i[insKey]
+
+    if ins == 'hlf':
+        reg[i[regKey]] //= 2
+        insPtr += 1
+    elif ins == 'tpl':
+        reg[i[regKey]] *= 3
+        insPtr += 1
+    elif ins == 'inc':
+        reg[i[regKey]] += 1
+        insPtr += 1
+    elif ins == 'jmp':
+        insPtr += i[offKey]
+    elif ins == 'jie':
+        if reg[i[regKey]] % 2 == 0:
+            insPtr += i[offKey]
+        else:
+            insPtr += 1
+    elif ins == 'jio':
+        if reg[i[regKey]] == 1:
+            insPtr += i[offKey]
+        else:
+            insPtr += 1
+
+    
+
 
 debug = True
 
@@ -92,7 +142,22 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+code = parseInput(sourceInput)
+pd(code)
 
-p(1)
+insPtr = 0
+reg = {
+    'a': 1,
+    'b': 0
+}
+
+try:
+    while True:
+        # p([reg,insPtr,code[insPtr]])
+        processInstruction()
+        # wait()
+
+except:
+    pass
+
+p(reg)

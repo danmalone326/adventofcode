@@ -1,0 +1,186 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+
+debug=True
+def p(obj):
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+targetKey = 'target'
+opKey = 'op'
+aKey = 'a'
+bKey = 'b'
+execKey = 'expression'
+
+def parseInput(input):
+    data = []
+
+    for line in input:
+        thisConnection = {}
+        lhs, rhs = line.split(' -> ')
+
+        thisConnection[targetKey] = rhs
+        lhsSplit = lhs.split()
+        if len(lhsSplit) == 1:
+            thisConnection[aKey] = lhs
+            thisConnection[execKey] = '{}'.format(thisConnection[aKey])
+        elif len(lhsSplit) == 2:
+            thisConnection[opKey] = lhsSplit[0]
+            thisConnection[aKey] = lhsSplit[1]
+            thisConnection[execKey] = '{} ^ 0xFFFF'.format(thisConnection[aKey])
+        else:
+            thisConnection[aKey] = lhsSplit[0]
+            thisConnection[opKey] = lhsSplit[1]
+            thisConnection[bKey] = lhsSplit[2]
+            if thisConnection[opKey] == 'AND':
+                operand = '&'
+            elif thisConnection[opKey] == 'OR':
+                operand = '|'
+            elif thisConnection[opKey] == 'LSHIFT':
+                operand = '<<'
+            elif thisConnection[opKey] == 'RSHIFT':
+                operand = '>>'
+            thisConnection[execKey] = '{} {} {}'.format(thisConnection[aKey],operand,thisConnection[bKey])
+            
+        data.append(thisConnection)
+            
+    return data
+
+wires = {}
+def computeConnection(connection):
+    global wires
+
+    # pd(connection)
+
+    localVars = {}
+        
+    aVar = connection[aKey]
+    if aVar in wires:
+        localVars[aVar] = wires[aVar]
+    elif aVar.isnumeric():
+        pass
+    else:
+        return
+    
+    if bKey in connection:
+        bVar = connection[bKey]
+        if bVar in wires:
+            localVars[bVar] = wires[bVar]
+        elif bVar.isnumeric():
+            pass
+        else:
+            return
+
+    # pd("eval('{}')".format(connection[execKey]))
+    wires[connection[targetKey]] = eval(connection[execKey],globals(),localVars)
+
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+# pd(data)
+
+count = 0
+while 'a' not in wires:
+    count += 1
+    p('pass: {}'.format(count))
+    for c in data:
+        # p(c[execKey])
+        computeConnection(c)
+
+for key in wires:
+    p('{}: {}'.format(key,wires[key]))
+
+key = 'a'
+p('{}: {}'.format(key,wires[key]))
+
+for i in range(len(data)):
+    c = data[i]
+    if c[targetKey] == 'b':
+        data[i][execKey] = str(wires['a'])
+        p(data[i])
+        break
+
+wires = {}
+
+count = 0
+while 'a' not in wires:
+    count += 1
+    p('pass: {}'.format(count))
+    for c in data:
+        # p(c[execKey])
+        computeConnection(c)
+
+key = 'a'
+p('{}: {}'.format(key,wires[key]))

@@ -1,0 +1,274 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+
+debug=True
+
+def p(obj,timePrefix = False):
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [str,int]:
+        print(obj)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(obj, indent=2))
+
+def pd(obj):
+    if debug:
+        p(obj)
+
+def wait():
+    input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def parseInput(input):
+    data = arrayOfIntFromCSV(input[0])
+    return data
+
+# playerHPKey = 0
+# playerManaKey = 1
+# bossHPKey = 2
+# bossDamageKey = 3
+# shieldTimerKey = 4
+# poisonTimerKey = 5
+# rechargeTimerKey = 6
+# nextTurnKey = 7
+
+# playerHP, playerMana, bossHP, bossDamage, shieldTimer, poisonTimer, rechargeTimer, nextTurn = game
+# game = [playerHP, playerMana, bossHP, bossDamage, shieldTimer, poisonTimer, rechargeTimer, nextTurn]
+
+def pGame(game):
+    playerHP, playerMana, bossHP, bossDamage, shieldTimer, poisonTimer, rechargeTimer, nextTurn = game
+    nextTurnStr = 'Player'
+    if nextTurn == 1:
+        nextTurnStr = 'Boss'
+    p('-- {} turn --'.format(nextTurnStr))
+    p('- Player has {} hit points, 0 armor, {} mana'.format(playerHP,playerMana))
+    p('- Boss has {} hit points, {} damage'.format(bossHP,bossDamage))
+    p('- Timers: shield: {} poison: {} recharge: {}'.format(shieldTimer,poisonTimer,rechargeTimer))
+
+
+def gameToKey(game):
+    key = '|'.join([str(x) for x in game])
+    return key
+
+def makeGame(playerHP, playerMana, bossHP, bossDamage, shieldTimer=0, poisonTimer=0, rechargeTimer=0, nextTurn=0):
+    game = [playerHP, playerMana, bossHP, bossDamage, shieldTimer, poisonTimer, rechargeTimer, nextTurn]
+    return game
+
+savedGameResults = {}
+def getMinCost(game):
+    global savedGameResults
+
+    gameKey = gameToKey(game)
+    if gameKey in savedGameResults:
+        return savedGameResults[gameKey]
+
+    playerHP, playerMana, bossHP, bossDamage, shieldTimer, poisonTimer, rechargeTimer, nextTurn = game
+
+    if nextTurn == 0:
+        playerHP -= 1
+
+    if playerHP <= 0:
+        return (False, 0)
+
+    thisWin = False
+    thisCost = 0
+
+    playerArmor = 0
+    # process effects
+    if shieldTimer > 0:
+        playerArmor += 7
+        shieldTimer -= 1
+    
+    if poisonTimer > 0:
+        bossHP -= 3
+        poisonTimer -= 1
+
+    if rechargeTimer > 0:
+        playerMana += 101
+        rechargeTimer -= 1
+
+    # boss loses
+    if bossHP <= 0:
+        thisWin = True
+
+    # boss attacks
+    elif nextTurn == 1:
+        thisWin, thisCost = getMinCost(
+            makeGame(
+                playerHP - max(1,bossDamage - playerArmor), 
+                playerMana, 
+                bossHP, 
+                bossDamage, 
+                shieldTimer, 
+                poisonTimer, 
+                rechargeTimer,
+                0
+            )
+        )
+
+    # player tries spells
+    else:
+        thisCost = 1000000
+
+        for i in range(5): # 5 spells
+            spellDamage = 0
+            spellHP = 0
+            spellShieldTimer = shieldTimer
+            spellPoisonTimer = poisonTimer
+            spellRechargeTimer = rechargeTimer
+            # magic missile
+            if i == 0: 
+                spellCost = 53
+                spellDamage = 4
+            # drain
+            elif i == 1:
+                spellCost = 73
+                spellDamage = 2
+                spellHP = 2
+            # shield
+            elif i == 2 and shieldTimer == 0:
+                spellCost = 113
+                spellShieldTimer = 6
+            # poison
+            elif i == 3 and poisonTimer == 0:
+                spellCost = 173
+                spellPoisonTimer = 6
+            # recharge
+            elif i == 4 and rechargeTimer == 0:
+                spellCost = 229
+                spellRechargeTimer = 5
+
+            # if player can afford this spell, they can not afford any of the subsequent either
+            if spellCost > playerMana:
+                break
+            else: 
+                # spell is afforded
+                nextWin, nextCost = getMinCost(
+                    makeGame(
+                        playerHP + spellHP, 
+                        playerMana - spellCost, 
+                        bossHP - spellDamage, 
+                        bossDamage, 
+                        spellShieldTimer, 
+                        spellPoisonTimer, 
+                        spellRechargeTimer,
+                        1
+                    )
+                )
+
+                if nextWin:
+                    # if this is the first win or this spell is cheaper
+                    if (not thisWin) or ((spellCost + nextCost) < thisCost):
+                        thisWin = True
+                        thisCost = spellCost + nextCost
+
+    # save result
+    savedGameResults[gameKey] = (thisWin,thisCost)
+
+    return (thisWin, thisCost)
+
+
+debug = True
+
+# sourceInput = getInput()
+playerHP = 50
+playerMana = 500
+bossHP = 58
+bossDamage = 9
+
+# playerHP = 10
+# playerMana = 250
+# bossHP = 14
+# bossDamage = 8
+
+game = makeGame(
+    playerHP=playerHP, 
+    playerMana=playerMana, 
+    bossHP=bossHP, 
+    bossDamage=bossDamage
+)
+
+
+
+# game = makeGame(
+#     playerHP=1, 
+#     playerMana=114, 
+#     bossHP=2, 
+#     bossDamage=8, 
+#     shieldTimer=0, 
+#     poisonTimer=4, 
+#     rechargeTimer=0, 
+#     nextTurn=0
+# )
+
+p(game)
+p(str(game))
+p(gameToKey(game))
+
+pGame(game)
+
+result = getMinCost(game)
+p(result)
+
+# p(savedGameResults)

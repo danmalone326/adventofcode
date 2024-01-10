@@ -87,12 +87,60 @@ def parseInput(input):
 
 debug = True
 
-sourceInput = getInput()
+# sourceInput = getInput()
 
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+# data = parseInput(sourceInput)
+# pd(data)
 
-p(1)
+# Enter the code at row 2981, column 3075.
+# start with 20151125
+# * 252533
+# % 33554393
+
+# top row = (x**2 + x) /2 
+# other row = z=(x+y-2) then (z**2 + z)/2 + x
+
+for x in range(1,7):
+    for y in range(1,7):
+        z=x+y-2
+        s = int((z**2 + z)/2 + x)
+        print(' {0:3d}'.format(s),end='')
+    p('')
+
+
+x=3075
+y=2981
+
+# x=6
+# y=6
+
+z=x+y-2
+s = int((z**2 + z)/2 + x)
+print(' {0:3d}'.format(s))
+
+iter = 1
+soFar = []
+code = 20151125
+soFar.append(code)
+while True:
+    iter += 1
+    if iter % 100000 == 0:
+        p(iter,timePrefix=True)
+    code = (code * 252533) % 33554393
+    # p(code)
+    if iter == s:
+        p('code: {}'.format(code))
+        break
+    # if code in soFar:
+    #     previous = soFar.index(code)
+    #     current  = iter
+    #     p(previous)
+    #     p(current)
+    #     break
+    # else:
+    #     soFar.append(code)
+
+

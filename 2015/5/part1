@@ -5,21 +5,12 @@ import json
 import math
 import re
 import copy
-from datetime import datetime
-import itertools
 
 debug=True
-
-def p(obj,timePrefix = False):
-    if timePrefix:
-        now = datetime.now()
-        print('{}: '.format(str(now.time()).split('.')[0]),end="")
-
+def p(obj):
     if type(obj) in [str,int]:
         print(obj)
     else:
-        if timePrefix:
-            print('')
         print(json.dumps(obj, indent=2))
 
 def pd(obj):
@@ -92,7 +83,18 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+data = sourceInput
+# pd(data)
 
-p(1)
+count = 0
+for line in data:
+    match1 = bool(re.search(r'(?:[aeiou].*){3}',line))
+    match2 = bool(re.search(r'(\w)\1',line))
+    match3 = bool(re.search(r'ab|cd|pq|xy', line))
+
+    # pd([match1, match2, match3])
+
+    if match1 and match2 and not match3:
+        count += 1
+
+p(count)

@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -82,8 +81,41 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
-    return data
+    bl = findBlankLine(input)
+
+    reps = list(line.split(' => ') for line in input[:bl])
+    mols = input[bl+1:]
+    return reps,mols
+
+def findRevRep(s):
+    global replacements
+
+    for r in replacements:
+        if r[1] == s:
+            return r
+        
+def findMost(s):
+    global replacements
+
+    max = 0
+    maxR = None
+    for r in replacements:
+        c = len(list([x.start() for x in re.finditer(r[1], s)]))
+        if c > max:
+            max = c
+            maxR = r
+    return maxR
+
+def showMost(s):
+    data = {}
+    for r in replacements:
+        c = len(list([x.start() for x in re.finditer(r[1], s)]))
+        if c > 0:
+            data[r[1]] = c
+
+    sData = {k: v for k, v in sorted(data.items(), key=lambda item: item[1])}
+    p(sData)
+        # print('{}: {}'.format(r[1],))
 
 debug = True
 
@@ -92,7 +124,34 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+replacements,molecules = parseInput(sourceInput)
 
-p(1)
+# p(replacements)
+# p(molecules)
+
+doThese = ['CaSi',"SiTh","CaP","CaF","PB","BP","PTi","PRnFAr"]
+
+count = 0
+
+m = molecules[0]
+# for t in doThese:
+#     r = findRevRep(t)
+lastM = ""
+while m != lastM:
+    lastM = m
+
+    for r in replacements:
+    # r = findRevRep(t)
+        rLen = len(r[1])
+        if m.find(r[1]) >= 0:
+            i = m.find(r[1])
+            m = m[:i] + r[0] + m[i+rLen:]
+            count += 1
+            p(count)
+            p(m)
+
+    p(count)
+
+# wait()
+
+# showMost(m)

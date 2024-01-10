@@ -5,21 +5,12 @@ import json
 import math
 import re
 import copy
-from datetime import datetime
-import itertools
 
 debug=True
-
-def p(obj,timePrefix = False):
-    if timePrefix:
-        now = datetime.now()
-        print('{}: '.format(str(now.time()).split('.')[0]),end="")
-
+def p(obj):
     if type(obj) in [str,int]:
         print(obj)
     else:
-        if timePrefix:
-            print('')
         print(json.dumps(obj, indent=2))
 
 def pd(obj):
@@ -82,8 +73,36 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = input
     return data
+
+def decodeString(str):
+    result = str[1:-1]
+
+    # replace hex
+    result = re.sub(r'\\x[0-9a-f]{2}', 'H', result)
+
+    # replace quotes
+    result = re.sub(r'\\"', '"', result)
+
+    # replace backslash
+    result = re.sub(r'\\\\', '\\\\', result)
+
+    return result
+
+def encodeString(str):
+    result = str
+
+    # replace backslash
+    result = re.sub(r'\\', '\\\\\\\\', result)
+
+    # replace quotes
+    result = re.sub(r'"', '\\"', result)
+
+    result = '"' + result + '"'
+
+    return result
+
 
 debug = True
 
@@ -95,4 +114,14 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+total1 = 0
+total2 = 0
+for line in data:
+    decodedLine = decodeString(line)
+    encodedLine = encodeString(line)
+    p('{}: {} | {}'.format(line,decodedLine,encodedLine))
+    total1 += len(line) - len(decodedLine)
+    total2 += len(encodedLine) - len(line)
+
+p(total1)
+p(total2)

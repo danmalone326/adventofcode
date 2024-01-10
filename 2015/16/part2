@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -82,7 +81,27 @@ def keyInit(dict,key,initialValue):
         dict[key] = initialValue
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    b = findBlankLine(input)
+
+    data = []
+    output = {}
+    for line in input[:b]:
+        sLine = line.split(': ')
+        output[sLine[0]] = int(sLine[1])
+    data.append(output)
+
+    aunts = {}
+    for line in input[b+1:]:
+        sLine = line.split(': ',1)
+        name = sLine[0]
+        thisAVs = {}
+        for av in sLine[1].split(', '):
+            a,v = av.split(': ')
+            thisAVs[a] = int(v)
+        aunts[name] = thisAVs
+
+    data.append(aunts)
+
     return data
 
 debug = True
@@ -93,6 +112,29 @@ sourceInput = getInput()
 # p(data)
 
 data = parseInput(sourceInput)
-pd(data)
+# pd(data)
+attrs, aunts = data
 
-p(1)
+for aunt in aunts.keys():
+    match = True
+
+    # if aunt != 'Sue 40':
+    #     continue
+
+    # p(aunt)
+    for attr in aunts[aunt].keys():
+        # p('{}: {} ~ {}'.format(attr,aunts[aunt][attr],attrs[attr]))
+        if attr in ['cats','trees']:
+            if aunts[aunt][attr] <= attrs[attr]:
+                match = False
+                break
+        elif attr in ['pomeranians','goldfish']:
+            if aunts[aunt][attr] >= attrs[attr]:
+                match = False
+                break
+        elif (aunts[aunt][attr] != attrs[attr]):
+            match = False
+            break
+    if match:
+        p('match: {}'.format(aunt))
+

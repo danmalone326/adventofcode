@@ -6,7 +6,6 @@ import math
 import re
 import copy
 from datetime import datetime
-import itertools
 
 debug=True
 
@@ -81,9 +80,75 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
+
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
-    return data
+    data = []
+    lenX = len(input[0])
+    lenY = len(input)
+    for line in input:
+        i = int(line.replace('.','0').replace('#','1'),2)
+        data.append(i)
+    return lenX, lenY, data
+
+def isOn(x,y):
+    global gridLenX, gridLenY, grid
+
+    if ((0 <= y < gridLenY) and x >= 0):
+        result = (grid[y] & 2**x) > 0
+    else:
+        result = False
+    return result
+
+def bitCountWithMask(i,mask):
+    # p((bin(i),bin(mask),bin(i & mask)))
+    return (i & mask).bit_count()
+
+def countAround(x,y):
+    global gridLenX, gridLenY, grid
+
+    count = 0
+
+    if x == 0:
+        mask = 3
+    else:
+        mask = 7 << (x-1)
+
+    # p(bin(mask))
+    
+    for i in range(max(y-1,0), y+2):
+        try:
+            count += bitCountWithMask(grid[i],mask)
+        except IndexError:
+            pass
+
+    return count
+
+def doPass():
+    global gridLenX, gridLenY, grid
+
+    newGrid = []
+    for y in range(gridLenY):
+        thisRow = 0
+        for x in range(gridLenX):
+            bc = countAround(x,y)
+            if (isOn(x,y) and bc in [3,4]) or ((not isOn(x,y)) and bc == 3):
+                thisRow += 2 ** x
+        newGrid.append(thisRow)
+
+    grid = newGrid
+
+def doStuck():
+    global gridLenX, gridLenY, grid
+    stuckMask = 1 + (2 ** (gridLenX-1))
+    grid[0] |= stuckMask
+    grid[gridLenY-1] |= stuckMask
+
+def pGrid():
+    global gridLenX, gridLenY, grid
+
+    fStr = '{0:0' + str(gridLenX) + 'b}'
+    for y in range(gridLenY):
+        p(fStr.format(grid[y]).replace('0','.').replace('1','#'))
 
 debug = True
 
@@ -92,7 +157,23 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+gridLenX, gridLenY, grid = parseInput(sourceInput)
+pd(grid)
 
-p(1)
+# p('{0:06b}'.format(grid[0]))
+
+iterations = 100
+# pGrid()
+doStuck()
+# p('')
+# pGrid()
+for i in range(iterations):
+    doPass()
+    doStuck()
+    # p('')
+    # pGrid()
+
+count = 0
+for x in grid:
+    count += x.bit_count()
+p(count)
