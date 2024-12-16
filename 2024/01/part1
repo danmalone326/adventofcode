@@ -10,31 +10,21 @@ import itertools
 
 debug=True
 
-def p(obj,timePrefix = False, newLine = True):
-    if newLine:
-        end = "\n"
-    else:
-        end = ""
-
+def p(obj,timePrefix = False):
     if timePrefix:
         now = datetime.now()
         print('{}: '.format(str(now.time()).split('.')[0]),end="")
 
     if type(obj) in [str,int]:
-        print(obj,end=end)
+        print(obj)
     else:
         if timePrefix:
             print('')
-        print(json.dumps(obj, indent=2),end=end)
+        print(json.dumps(obj, indent=2))
 
-def pd(obj,timePrefix = False,newLine = True):
+def pd(obj):
     if debug:
-        p(obj,timePrefix=timePrefix,newLine=newLine)
-
-def pdCharGrid(grid):
-    if debug:
-        for y in range(len(grid)):
-            pd(''.join(grid[y]))
+        p(obj)
 
 def wait():
     input("Press Enter to continue...")
@@ -59,14 +49,6 @@ def arrayFromGridOfDigits(input):
     rows = []
     for line in input:
         rows.append([int(c) for c in list(line.strip())])
-    return rows
-
-# pass multiple lines
-# returns a 2 dimensional array
-def arrayFromGridOfSpaceSeparatedDigits(input):
-    rows = []
-    for line in input:
-        rows.append([int(c) for c in list(line.split(" "))])
     return rows
 
 # one line in returns an array
@@ -99,20 +81,21 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def getCharGrid(grid,x,y,outOfBoundsChar=None):
-    result = None
-    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
-        result = outOfBoundsChar
-    else:
-        result = grid[y][x]
-    return result
-
-def setCharGrid(grid,x,y,char):
-    grid[y][x] = char
-
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
-    return data
+    a = []
+    b = []
+    pattern = r"(\d+)\s*(\d+)"
+
+    for line in input:
+        match = re.search(pattern=pattern, string=line)
+        if match:
+            a.append(int(match.group(1)))
+            b.append(int(match.group(2)))
+
+    a.sort()
+    b.sort()
+
+    return (a,b)
 
 debug = True
 
@@ -121,7 +104,40 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+a,b = parseInput(sourceInput)
+#pd((a,b))
 
-p(1)
+d = 0
+for i in range(len(a)):
+    d += abs(b[i] - a[i])
+
+p(d)
+
+ai=0
+bi=0
+ssTotal=0
+
+while (ai<len(a) and bi<len(b)):
+    thisNum = a[ai]
+    ac = 0
+    bc = 0
+
+    while ((bi < len(b)) and (b[bi] < thisNum)):
+        bi+=1
+
+    while ((bi < len(b)) and (b[bi] == thisNum)):
+        bi+=1
+        bc+=1
+
+    while ((ai < len(a)) and (a[ai] == thisNum)):
+        ai+=1
+        ac+=1
+
+    # p(f"ai: {ai} a[ai]: {a[ai]} ac: {ac} bi:{bi} b[bi]: {b[bi]} bc: {bc}")
+
+    ss = bc*ac*thisNum
+    p(ss)
+    ssTotal += ss
+
+
+p(ssTotal)

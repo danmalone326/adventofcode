@@ -10,31 +10,21 @@ import itertools
 
 debug=True
 
-def p(obj,timePrefix = False, newLine = True):
-    if newLine:
-        end = "\n"
-    else:
-        end = ""
-
+def p(obj,timePrefix = False):
     if timePrefix:
         now = datetime.now()
         print('{}: '.format(str(now.time()).split('.')[0]),end="")
 
     if type(obj) in [str,int]:
-        print(obj,end=end)
+        print(obj)
     else:
         if timePrefix:
             print('')
-        print(json.dumps(obj, indent=2),end=end)
+        print(json.dumps(obj, indent=2))
 
-def pd(obj,timePrefix = False,newLine = True):
+def pd(obj):
     if debug:
-        p(obj,timePrefix=timePrefix,newLine=newLine)
-
-def pdCharGrid(grid):
-    if debug:
-        for y in range(len(grid)):
-            pd(''.join(grid[y]))
+        p(obj)
 
 def wait():
     input("Press Enter to continue...")
@@ -99,20 +89,35 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def getCharGrid(grid,x,y,outOfBoundsChar=None):
-    result = None
-    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
-        result = outOfBoundsChar
-    else:
-        result = grid[y][x]
-    return result
-
-def setCharGrid(grid,x,y,char):
-    grid[y][x] = char
-
 def parseInput(input):
     data = arrayOfIntFromCSV(input[0])
     return data
+
+def checkRow(row):
+    p(row)
+    dir = 0
+    thisResult = True
+    if row[0] == row[1]:
+        thisResult = False
+    else:
+        diff = row[1]-row[0]
+        dir = abs(diff)/diff
+
+        for i in range(len(row)-1):
+            # p(f"{row[i]} {row[i+1]}")
+            thisDiff = row[i+1]-row[i]
+            if thisDiff == 0:
+                thisResult = False
+                break
+            thisDir = abs(thisDiff)/thisDiff
+            # p(f"thisDiff: {thisDiff}  thisDir: {thisDir}")
+            if thisDir != dir or abs(thisDiff) < 1 or abs(thisDiff) > 3:
+                thisResult = False
+                break
+
+    p(thisResult)
+    return thisResult
+
 
 debug = True
 
@@ -121,7 +126,21 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+data = arrayFromGridOfSpaceSeparatedDigits(sourceInput)
+# pd(data)
 
-p(1)
+count = 0
+count2 = 0
+for row in data:
+    if (checkRow(row)):
+        count += 1
+        count2 += 1
+    else:
+        for i in range(len(row)):
+            if checkRow(row[0:i] + row[i+1:len(row)]):
+                count2+=1
+                break
+
+
+p(count)
+p(count2)

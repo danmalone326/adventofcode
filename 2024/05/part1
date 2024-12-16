@@ -10,31 +10,21 @@ import itertools
 
 debug=True
 
-def p(obj,timePrefix = False, newLine = True):
-    if newLine:
-        end = "\n"
-    else:
-        end = ""
-
+def p(obj,timePrefix = False):
     if timePrefix:
         now = datetime.now()
         print('{}: '.format(str(now.time()).split('.')[0]),end="")
 
     if type(obj) in [str,int]:
-        print(obj,end=end)
+        print(obj)
     else:
         if timePrefix:
             print('')
-        print(json.dumps(obj, indent=2),end=end)
+        print(json.dumps(obj, indent=2))
 
-def pd(obj,timePrefix = False,newLine = True):
+def pd(obj):
     if debug:
-        p(obj,timePrefix=timePrefix,newLine=newLine)
-
-def pdCharGrid(grid):
-    if debug:
-        for y in range(len(grid)):
-            pd(''.join(grid[y]))
+        p(obj)
 
 def wait():
     input("Press Enter to continue...")
@@ -99,22 +89,50 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def getCharGrid(grid,x,y,outOfBoundsChar=None):
-    result = None
-    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
-        result = outOfBoundsChar
-    else:
-        result = grid[y][x]
-    return result
-
-def setCharGrid(grid,x,y,char):
-    grid[y][x] = char
-
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
-    return data
+    rules = {}
+    updates = []
+    blankIndex = findBlankLine(input)
 
-debug = True
+    pattern = r"(\d+)\|(\d+)"
+    for i in range(0,blankIndex):
+        match = re.search(pattern=pattern,string=input[i])
+        if match:
+            a = int(match.groups()[0])
+            b = int(match.groups()[1])
+            keyInit(rules,a,[])
+            rules[a].append(b)
+
+    for i in range(blankIndex+1,len(input)):
+        updates.append(arrayOfIntFromCSV(input[i]))
+
+    return (rules,updates)
+
+def inOrder(update,rules):
+    aIndex = None
+    bIndex = None
+    ordered = True
+
+    for i in range(1,len(update)):
+        pd(update[i])
+        if update[i] in rules:
+            for j in range(i):
+                pd(f"- {update[j]}")
+                if update[j] in rules[update[i]]:
+                    ordered = False
+                    aIndex = j
+                    break
+        else:
+            pd("no rules")
+
+        if not ordered:
+            bIndex = i
+            break
+
+    return ordered, aIndex, bIndex
+
+
+debug = False
 
 sourceInput = getInput()
 
@@ -122,6 +140,20 @@ sourceInput = getInput()
 # p(data)
 
 data = parseInput(sourceInput)
-pd(data)
+# pd(data)
 
-p(1)
+rules, updates = data
+pd(rules)
+
+sum = 0
+for update in updates:
+    good, index1, index2 = inOrder(update=update, rules=rules)
+
+    if good:
+        pd(update)
+        sum += update[int((len(update)-1)/2)]
+    else:
+        pass
+
+
+p(f"good: {sum}")

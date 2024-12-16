@@ -10,31 +10,21 @@ import itertools
 
 debug=True
 
-def p(obj,timePrefix = False, newLine = True):
-    if newLine:
-        end = "\n"
-    else:
-        end = ""
-
+def p(obj,timePrefix = False):
     if timePrefix:
         now = datetime.now()
         print('{}: '.format(str(now.time()).split('.')[0]),end="")
 
     if type(obj) in [str,int]:
-        print(obj,end=end)
+        print(obj)
     else:
         if timePrefix:
             print('')
-        print(json.dumps(obj, indent=2),end=end)
+        print(json.dumps(obj, indent=2))
 
-def pd(obj,timePrefix = False,newLine = True):
+def pd(obj):
     if debug:
-        p(obj,timePrefix=timePrefix,newLine=newLine)
-
-def pdCharGrid(grid):
-    if debug:
-        for y in range(len(grid)):
-            pd(''.join(grid[y]))
+        p(obj)
 
 def wait():
     input("Press Enter to continue...")
@@ -99,22 +89,76 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def getCharGrid(grid,x,y,outOfBoundsChar=None):
+def getChar(grid,x,y):
     result = None
-    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
-        result = outOfBoundsChar
+    if x<0 or x>=len(data[0]) or y<0 or y>=len(data):
+        result = None
     else:
-        result = grid[y][x]
+        result = data[y][x]
     return result
 
-def setCharGrid(grid,x,y,char):
-    grid[y][x] = char
+def findStart(grid):
+    x=0
+    y=0
+    while y < len(grid):
+        try:
+            x=grid[y].index('^')
+        except ValueError:
+            x=-1
+        if x>=0:
+            break
+        y += 1
+
+    return (x,y)
+
+def isValidPos(data,x,y):
+    return x>=0 and x<len(data[0]) and y>=0 and y<len(data)
+
+def nextPosition(x,y,d):
+    nX = x
+    nY = y
+    if d == "^": 
+        nY -= 1
+    elif d == ">":
+        nX += 1
+    elif d == "v":
+        nY += 1
+    elif d == "<":
+        nX -= 1
+    else:
+        raise ValueError
+
+    return nX,nY
+
+def nextDirection(cDir):
+    if cDir == "^": 
+        nDir = ">"
+    elif cDir == ">":
+        nDir = "v"
+    elif cDir == "v":
+        nDir = "<"
+    elif cDir == "<":
+        nDir = "^"
+    else:
+        raise ValueError
+    return nDir
+
+def countPositions(data):
+    count = 0
+    for row in data:
+        count += len(row) - row.count('#') - row.count('.')
+
+    return count
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = []
+    for line in input:
+        data.append(list(line))
     return data
 
-debug = True
+
+
+debug = False
 
 sourceInput = getInput()
 
@@ -124,4 +168,33 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+
+(xPos,yPos) = findStart(data)
+
+direction = getChar(data,xPos,yPos)
+
+
+while isValidPos(data,xPos,yPos):
+    # pd((xPos,yPos,direction))
+
+    data[yPos][xPos] = direction
+
+    while True:
+        nX, nY = nextPosition(xPos,yPos,direction)
+        # pd((nX,nY))
+        nextChar = getChar(data,nX,nY)
+        pd(nextChar)
+        if nextChar != "#":
+            xPos = nX
+            yPos = nY
+            break
+        else:
+            direction = nextDirection(direction)
+        
+        # wait()
+
+
+# pd(data)
+
+count = countPositions(data)
+p(count)

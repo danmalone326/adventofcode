@@ -10,31 +10,21 @@ import itertools
 
 debug=True
 
-def p(obj,timePrefix = False, newLine = True):
-    if newLine:
-        end = "\n"
-    else:
-        end = ""
-
+def p(obj,timePrefix = False):
     if timePrefix:
         now = datetime.now()
         print('{}: '.format(str(now.time()).split('.')[0]),end="")
 
     if type(obj) in [str,int]:
-        print(obj,end=end)
+        print(obj)
     else:
         if timePrefix:
             print('')
-        print(json.dumps(obj, indent=2),end=end)
+        print(json.dumps(obj, indent=2))
 
-def pd(obj,timePrefix = False,newLine = True):
+def pd(obj):
     if debug:
-        p(obj,timePrefix=timePrefix,newLine=newLine)
-
-def pdCharGrid(grid):
-    if debug:
-        for y in range(len(grid)):
-            pd(''.join(grid[y]))
+        p(obj)
 
 def wait():
     input("Press Enter to continue...")
@@ -99,20 +89,17 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def getCharGrid(grid,x,y,outOfBoundsChar=None):
-    result = None
-    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
-        result = outOfBoundsChar
-    else:
-        result = grid[y][x]
-    return result
-
-def setCharGrid(grid,x,y,char):
-    grid[y][x] = char
-
 def parseInput(input):
     data = arrayOfIntFromCSV(input[0])
     return data
+
+def getChar(data,x,y):
+    result = None
+    if x<0 or x>=len(data[0]) or y<0 or y>=len(data):
+        result = "."
+    else:
+        result = data[y][x]
+    return result
 
 debug = True
 
@@ -121,7 +108,15 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+data = sourceInput
 
-p(1)
+count = 0
+for y in range(len(data)):
+    for x in range(len(data[0])):
+        if getChar(data,x,y) == "A":
+            a = getChar(data,x-1,y-1) + "A" + getChar(data,x+1,y+1)
+            b = getChar(data,x+1,y-1) + "A" + getChar(data,x-1,y+1)
+            if (a=="SAM" or a=="MAS") and (b=="SAM" or b=="MAS"):
+                count += 1
+
+p(count)
