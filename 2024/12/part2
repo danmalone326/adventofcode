@@ -120,8 +120,67 @@ def clearBit(value,bit):
 def getBit(value,bit):
     return value & 1 << bit != 0 
 
+def areaPerimeter(data,used,x,y):
+    char = getGrid(data,x,y,None)
+
+    # pd(char)
+    # pd(f"{x},{y}")
+    # pd(used[y])
+    # wait()
+
+    area=0
+    perimeter=0
+
+
+    if not getBit(used[y],x):
+        used[y] = setBit(used[y],x)
+        area+=1
+    
+        nx = x+1
+        ny = y
+        if getGrid(data,nx,ny) == char:
+            if not getBit(used[ny],nx):
+                areaInc,perimeterInc = areaPerimeter(data,used,nx,ny)
+                area += areaInc
+                perimeter += perimeterInc
+        else:
+            perimeter += 1
+
+        nx = x-1
+        ny = y
+        if getGrid(data,nx,ny) == char:
+            if not getBit(used[ny],nx):
+                areaInc,perimeterInc = areaPerimeter(data,used,nx,ny)
+                area += areaInc
+                perimeter += perimeterInc
+        else:
+            perimeter += 1
+
+        nx = x
+        ny = y+1
+        if getGrid(data,nx,ny) == char:
+            if not getBit(used[ny],nx):
+                areaInc,perimeterInc = areaPerimeter(data,used,nx,ny)
+                area += areaInc
+                perimeter += perimeterInc
+        else:
+            perimeter += 1
+
+        nx = x
+        ny = y-1
+        if getGrid(data,nx,ny) == char:
+            if not getBit(used[ny],nx):
+                areaInc,perimeterInc = areaPerimeter(data,used,nx,ny)
+                area += areaInc
+                perimeter += perimeterInc
+        else:
+            perimeter += 1
+
+    return area, perimeter
+
+
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = input
     return data
 
 debug = True
@@ -134,4 +193,13 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+used = [0] * len(data)
+
+sum = 0
+for y in range(len(data)):
+    for x in range(len(data[0])):
+        if not getBit(used[y],x):
+            area,perimeter = areaPerimeter(data,used,x,y)
+            sum += area*perimeter
+
+p(sum)

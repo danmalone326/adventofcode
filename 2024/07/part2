@@ -37,8 +37,7 @@ def pdCharGrid(grid):
             pd(''.join(grid[y]))
 
 def wait():
-    if debug:
-        input("Press Enter to continue...")
+    input("Press Enter to continue...")
 
 def getInput():
     fileRows = []
@@ -71,6 +70,10 @@ def arrayFromGridOfSpaceSeparatedDigits(input):
     return rows
 
 # one line in returns an array
+def arrayOfIntFromSpaceSeparatedDigits(line):
+    return [int(c) for c in list(line.strip().split(" "))]
+ 
+# one line in returns an array
 def arrayOfStrFromCSV(line):
     return list(line.strip().split(','))
 
@@ -100,31 +103,43 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def getGrid(grid,x,y,outOfBoundsObj=None):
+def getCharGrid(grid,x,y,outOfBoundsChar=None):
     result = None
     if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
-        result = outOfBoundsObj
+        result = outOfBoundsChar
     else:
         result = grid[y][x]
     return result
 
-def setGrid(grid,x,y,obj):
-    grid[y][x] = obj
+def setCharGrid(grid,x,y,char):
+    grid[y][x] = char
 
-def setBit(value,bit):
-    return value | (1<<bit)
+def getBitValue(binData,bitPosition):
+    return ((binData>>bitPosition) & 1)
 
-def clearBit(value,bit):
-    return value & ~(1<<bit)
-
-def getBit(value,bit):
-    return value & 1 << bit != 0 
+def decToBase(num,base,digits):
+    nums = []
+    if num == 0:
+        nums.append("0")
+    else:
+        while num:
+            num, r = divmod(num, base)
+            nums.append(str(r))
+    return ''.join(reversed(nums)).zfill(digits)
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = []
+    for line in input:
+        a,b = line.split(":")
+        testValue = int(a)
+        operands = arrayOfIntFromSpaceSeparatedDigits(b)
+        data.append({
+            "testValue": testValue,
+            "operands": operands
+        })
     return data
 
-debug = True
+debug = False
 
 sourceInput = getInput()
 
@@ -134,4 +149,41 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+operatorOptions = ["+","*","|"]
+operatorOptionCount = len(operatorOptions)
+
+result = 0
+for test in data:
+    testValue = test["testValue"]
+    operands = test["operands"]
+
+    operatorCount = len(operands)-1
+    # pd(f"operatorCount: {operatorCount}")
+    found = False
+    for counter in range(operatorOptionCount**operatorCount):
+        # pd(f"operatorBin: {operatorBin}")
+        operatorIndex = decToBase(counter,operatorOptionCount,operatorCount)
+        pd(operatorIndex)
+        value = operands[0]
+        for i in range(operatorCount):
+            operator = operatorOptions[int(operatorIndex[i])]
+            if operator == "+":
+                value += operands[i+1]
+            elif operator == "*":
+                value *= operands[i+1]
+            elif operator == "|":
+                value = int(str(value) + str(operands[i+1]))
+
+        if value == testValue:
+            found = True
+            # pd(" - True")
+            break
+        else:
+            pass
+            # pd(" - False")
+
+    # pd("")
+    if found:
+        result += testValue
+
+p(result)

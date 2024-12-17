@@ -64,6 +64,14 @@ def arrayFromGridOfDigits(input):
 
 # pass multiple lines
 # returns a 2 dimensional array
+def arrayFromGridOfChar(input):
+    rows = []
+    for line in input:
+        rows.append(list(line.strip()))
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
 def arrayFromGridOfSpaceSeparatedDigits(input):
     rows = []
     for line in input:
@@ -100,28 +108,19 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def getGrid(grid,x,y,outOfBoundsObj=None):
+def getCharGrid(grid,x,y,outOfBoundsChar=None):
     result = None
     if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
-        result = outOfBoundsObj
+        result = outOfBoundsChar
     else:
         result = grid[y][x]
     return result
 
-def setGrid(grid,x,y,obj):
+def setCharGrid(grid,x,y,obj):
     grid[y][x] = obj
 
-def setBit(value,bit):
-    return value | (1<<bit)
-
-def clearBit(value,bit):
-    return value & ~(1<<bit)
-
-def getBit(value,bit):
-    return value & 1 << bit != 0 
-
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = arrayFromGridOfChar(input)
     return data
 
 debug = True
@@ -132,6 +131,39 @@ sourceInput = getInput()
 # p(data)
 
 data = parseInput(sourceInput)
-pd(data)
+pdCharGrid(data)
 
-p(1)
+paths = []
+for y in range(len(data)):
+    paths.append([])
+    for x in range(len(data[0])):
+        paths[y].append(set())
+
+# paths = [set() * len(data[0]) for i in range(len(data))]
+
+sum=0
+for i in reversed(range(10)):
+    for y in range(len(data)):
+        for x in range(len(data[0])):
+            if getCharGrid(data,x,y) == str(i):
+                if i==9:
+                    value = set([f"{x},{y}"])
+                    setCharGrid(paths,x,y,value)
+                else:
+                    value = set()
+                    if getCharGrid(data,x-1,y,0) == str(i+1):
+                        value.update(getCharGrid(paths,x-1,y,set()))
+                    if getCharGrid(data,x+1,y,0) == str(i+1):
+                        value.update(getCharGrid(paths,x+1,y,set()))
+                    if getCharGrid(data,x,y-1,0) == str(i+1):
+                        value.update(getCharGrid(paths,x,y-1,set()))
+                    if getCharGrid(data,x,y+1,0) == str(i+1):
+                        value.update(getCharGrid(paths,x,y+1,set()))
+                    setCharGrid(paths,x,y,value)
+                    # pd(len(value))
+                    # pd(list(value))
+                    if i==0:
+                        sum += len(value)
+                        pd(len(value))
+# pd(paths)
+p(sum)

@@ -100,29 +100,24 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def getGrid(grid,x,y,outOfBoundsObj=None):
+def getCharGrid(grid,x,y,outOfBoundsChar=None):
     result = None
     if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
-        result = outOfBoundsObj
+        result = outOfBoundsChar
     else:
         result = grid[y][x]
     return result
 
-def setGrid(grid,x,y,obj):
-    grid[y][x] = obj
-
-def setBit(value,bit):
-    return value | (1<<bit)
-
-def clearBit(value,bit):
-    return value & ~(1<<bit)
-
-def getBit(value,bit):
-    return value & 1 << bit != 0 
+def setCharGrid(grid,x,y,char):
+    grid[y][x] = char
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = arrayOfIntFromList(arrayOfWordsFromString(input[0]))
     return data
+
+def incKey(dict,key,i):
+    keyInit(dict,key,0)
+    dict[key] += i
 
 debug = True
 
@@ -134,4 +129,39 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+iterations = 75
+prev = {}
+for a in data:
+    incKey(prev,a,1)
+
+for i in range(iterations):
+    new = {}
+    for a in prev:
+        count = prev[a]
+        if a == 0:
+            incKey(new,1,prev[a])
+        else:
+            aStr = str(a)
+            aLen = len(aStr)
+            if aLen % 2 == 0:
+                value = int(aStr[:int(aLen/2)])
+                incKey(new,value,count)
+
+                value = int(aStr[int(aLen/2):])
+                incKey(new,value,count)
+            else:
+                incKey(new,a * 2024, count)
+
+    pd(i,timePrefix=True)
+    prev = new
+
+    # pd(prev)
+    # pd(len(prev))
+    # wait()
+
+# pd(len(prev))
+count = 0
+for a in prev:
+    count += prev[a]
+
+p(count)
