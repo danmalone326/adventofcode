@@ -1,0 +1,285 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+
+debug=True
+
+def p(obj,timePrefix = False, newLine = True):
+    if newLine:
+        end = "\n"
+    else:
+        end = ""
+
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [str,int]:
+        print(obj,end=end)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(obj, indent=2),end=end)
+
+def pd(obj,timePrefix = False,newLine = True):
+    if debug:
+        p(obj,timePrefix=timePrefix,newLine=newLine)
+
+def pdCharGrid(grid):
+    if debug:
+        for y in range(len(grid)):
+            pd(''.join(grid[y]))
+
+def wait():
+    if debug:
+        input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfSpaceSeparatedDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.split(" "))])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def getGrid(grid,x,y,outOfBoundsObj=None):
+    result = None
+    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
+        result = outOfBoundsObj
+    else:
+        result = grid[y][x]
+    return result
+
+def setGrid(grid,x,y,obj):
+    grid[y][x] = obj
+
+def setBit(value,bit):
+    return value | (1<<bit)
+
+def clearBit(value,bit):
+    return value & ~(1<<bit)
+
+def getBit(value,bit):
+    return value & 1 << bit != 0 
+
+def parseInput(input):
+    data = input
+    return data
+
+def findGrid(grid,char):
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if getGrid(grid,x,y) == char:
+                return x,y
+
+def getGridDir(grid,x,y,dir):
+    dirCost = getGrid(grid,x,y)
+    return dirCost[dir]
+
+def setGridDir(grid,x,y,dir,cost):
+    dirCost = getGrid(grid,x,y)
+    dirCost[dir] = cost
+
+def nextPosition(x,y,d):
+    nX = x
+    nY = y
+    if d == "^": 
+        nY -= 1
+    elif d == ">":
+        nX += 1
+    elif d == "v":
+        nY += 1
+    elif d == "<":
+        nX -= 1
+    else:
+        raise ValueError
+
+    return nX,nY
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+dirList = ["<",">","^","v"]
+turnCost = {
+    "<<": 0,
+    "<^": 1000,
+    "<v": 1000,
+    "<>": 2000,
+    "^^": 0,
+    "^<": 1000,
+    "^>": 1000,
+    "^v": 2000,
+    ">>": 0,
+    ">^": 1000,
+    ">v": 1000,
+    "><": 2000,
+    "vv": 0,
+    "v<": 1000,
+    "v>": 1000,
+    "v^": 2000
+}
+
+map = parseInput(sourceInput)
+# pd(map)
+
+# if a spot changes, neighbors need to be recomputed
+def addNeighbors(map,recomputeList,x,y):
+    for dir in dirList:
+        newX,newY = nextPosition(x,y,dir)
+        char = getGrid(map,newX,newY)
+        if char and char in [".","S"]:
+            recomputeList.append((newX,newY))
+
+
+# recompute and return true if changed
+def recompute(costGrid,x,y):
+    # pd((len(costGrid),len(costGrid[0])))
+    # pd(f"x,y: {x},{y}")
+    myCost = getGrid(costGrid,x,y)
+    changed = False
+    for outDir in dirList:
+        neighborX,neighborY = nextPosition(x,y,outDir)
+        neighborCost = getGridDir(costGrid,neighborX,neighborY,outDir)
+        # if outDir == ">":
+        #     pd(neighborCost)
+
+        if neighborCost != None:
+            # pd("good neighbor")
+            for inDir in dirList:
+                newCost = turnCost[f"{inDir}{outDir}"] + 1 + neighborCost
+                if not myCost[inDir] or newCost < myCost[inDir]:
+                    myCost[inDir] = newCost
+                    changed = True
+
+    return changed
+
+
+def getNextBest(costGrid,x,y,inDir):
+    nextPosList = []
+    minCost = getGridDir(costGrid,x,y,inDir)
+    for outDir in dirList:
+        neighborX,neighborY = nextPosition(x,y,outDir)
+        neighborCost = getGridDir(costGrid,neighborX,neighborY,outDir)
+        if neighborCost:
+            nextPos = (neighborX,neighborY,outDir)
+            thisCost = neighborCost + turnCost[f"{inDir}{outDir}"]
+            if not minCost or thisCost < minCost:
+                nextPosList = [nextPos]
+                minCost = thisCost
+            elif thisCost == minCost:
+                nextPosList.append(nextPos)
+
+    return nextPosList
+
+
+# dirCost is the cost to the exit if you arrive going this direction
+dirCost = {}
+for dir in dirList:
+    dirCost[dir] = None
+
+costGrid = []
+for y in range(len(map)):
+    costGrid.append([])
+    for x in range(len(map[0])):
+        costGrid[-1].append(dirCost.copy())
+
+pd((len(costGrid),len(costGrid[0])))
+
+recomputeList = []
+
+ex, ey = findGrid(map,"E")
+for dir in dirList:
+    setGridDir(costGrid,ex,ey,dir,0)
+
+addNeighbors(map,recomputeList,ex,ey)
+
+# pd(recomputeList)
+
+while recomputeList:
+    x,y = recomputeList.pop()
+    if recompute(costGrid,x,y):
+        addNeighbors(map,recomputeList,x,y)
+
+    # pd(f"recomputeList: {len(recomputeList)}")
+
+sx,sy = findGrid(map,"S")
+result = getGridDir(costGrid,sx,sy,">")
+
+p(result)
+
+pathSet = set()
+pathSet.add((sx,sy))
+
+checkList = [(sx,sy,">")]
+while checkList:
+    checkPos = checkList.pop()
+    nextPosList = getNextBest(costGrid,checkPos[0],checkPos[1],checkPos[2])
+    if nextPosList:
+        pathSet.update([(a[0],a[1]) for a in nextPosList])
+        checkList.extend(nextPosList)
+
+# I couldn't find where I missed the 1, but got lucky  on a previous wrong answer so could guess
+tiles = len(pathSet) + 1
+p(tiles)

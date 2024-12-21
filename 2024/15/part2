@@ -1,0 +1,243 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+
+debug=True
+
+def p(obj,timePrefix = False, newLine = True):
+    if newLine:
+        end = "\n"
+    else:
+        end = ""
+
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [str,int]:
+        print(obj,end=end)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(obj, indent=2),end=end)
+
+def pd(obj,timePrefix = False,newLine = True):
+    if debug:
+        p(obj,timePrefix=timePrefix,newLine=newLine)
+
+def pdCharGrid(grid):
+    if debug:
+        for y in range(len(grid)):
+            pd(''.join(grid[y]))
+
+def wait():
+    if debug:
+        input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfSpaceSeparatedDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.split(" "))])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def getGrid(grid,x,y,outOfBoundsObj=None):
+    result = None
+    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
+        result = outOfBoundsObj
+    else:
+        result = grid[y][x]
+    return result
+
+def setGrid(grid,x,y,obj):
+    grid[y][x] = obj
+
+def setBit(value,bit):
+    return value | (1<<bit)
+
+def clearBit(value,bit):
+    return value & ~(1<<bit)
+
+def getBit(value,bit):
+    return value & 1 << bit != 0 
+
+def parseInput(input):
+    blankLinePosition = findBlankLine(input)
+    data = {}
+    data["map"] = [list(a.replace("#","##").replace("O","[]").replace(".","..").replace("@","@.")) for a in input[:blankLinePosition]]
+    data["steps"] = ''.join(input[blankLinePosition+1:])
+    return data
+
+def gpsCoordinate(x,y):
+    return 100*y + x
+
+def gpsSum(map):
+    sum = 0
+    for y in range(len(map)):
+        for x in range(len(map[0])):
+            if getGrid(map,x,y) in ["O","["]:
+                sum += gpsCoordinate(x,y)
+    return sum
+
+def findRobot(map):
+    for y in range(len(map)):
+        for x in range(len(map[0])):
+            if getGrid(map,x,y) == "@":
+                return x,y
+
+
+def getNextPos(x,y,d):
+    newX = x
+    newY = y
+    if (d == "<"):
+        newX -= 1
+    elif (d == ">"):
+        newX += 1
+    elif (d == "^"):
+        newY -= 1
+    elif (d == "v"):
+        newY += 1
+    else:
+        raise ValueError(f"Invalid direction: {d}")
+    
+    return newX,newY
+
+
+def canMoveHere(map,x,y,d):
+    result = None
+    thisChar = getGrid(map,x,y)
+    if thisChar == "#":
+        result = False
+    elif thisChar == ".":
+        result = True
+    else:
+        newX, newY = getNextPos(x,y,d)
+
+        if d in ["<",">"] or thisChar == "@":
+            result = canMoveHere(map,newX,newY,d)
+        elif thisChar == "[":
+            result = canMoveHere(map,newX,newY,d) and canMoveHere(map,newX+1,newY,d)
+        elif thisChar == "]":
+            result = canMoveHere(map,newX,newY,d) and canMoveHere(map,newX-1,newY,d)
+
+    return result
+
+
+# attempts to move and returns true if moved
+def move(map,x,y,d):
+    result = None
+
+    thisChar = getGrid(map,x,y)
+    if thisChar in ["#","."]:
+        result = False
+    elif canMoveHere(map,x,y,d):
+        result = True
+        newX, newY = getNextPos(x,y,d)
+
+        if d in ["<",">"] or thisChar == "@":
+            move(map,newX,newY,d)
+            setGrid(map,newX,newY,thisChar)
+            setGrid(map,x,y,".")
+        elif thisChar == "[":
+            move(map,newX,newY,d)
+            move(map,newX+1,newY,d)
+            setGrid(map,newX,newY,"[")
+            setGrid(map,x,y,".")
+            setGrid(map,newX+1,newY,"]")
+            setGrid(map,x+1,y,".")
+
+        elif thisChar == "]":
+            move(map,newX,newY,d)
+            move(map,newX-1,newY,d)
+            setGrid(map,newX,newY,"]")
+            setGrid(map,x,y,".")
+            setGrid(map,newX-1,newY,"[")
+            setGrid(map,x-1,y,".")
+
+        else:
+            result = False
+
+    return result
+
+debug = False
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+pdCharGrid(data["map"])
+pd(data["steps"])
+
+map = data["map"]
+x,y = findRobot(map)
+for d in data["steps"]:
+    if move(map,x,y,d):
+        x,y = getNextPos(x,y,d)
+    pd(f"Move {d}:")
+    pdCharGrid(map)
+
+pdCharGrid(map)
+s = gpsSum(map)
+
+p(s)

@@ -1,0 +1,235 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+
+debug=True
+
+def p(obj,timePrefix = False, newLine = True):
+    if newLine:
+        end = "\n"
+    else:
+        end = ""
+
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [str,int]:
+        print(obj,end=end)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(obj, indent=2),end=end)
+
+def pd(obj,timePrefix = False,newLine = True):
+    if debug:
+        p(obj,timePrefix=timePrefix,newLine=newLine)
+
+def pdCharGrid(grid):
+    if debug:
+        for y in range(len(grid)):
+            pd(''.join(grid[y]))
+
+def wait():
+    if debug:
+        input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfSpaceSeparatedDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.split(" "))])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def getGrid(grid,x,y,outOfBoundsObj=None):
+    result = None
+    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
+        result = outOfBoundsObj
+    else:
+        result = grid[y][x]
+    return result
+
+def setGrid(grid,x,y,obj):
+    grid[y][x] = obj
+
+def setBit(value,bit):
+    return value | (1<<bit)
+
+def clearBit(value,bit):
+    return value & ~(1<<bit)
+
+def getBit(value,bit):
+    return value & 1 << bit != 0 
+
+pattern1 = r"Button (\w)\: X\+(\d+), Y\+(\d+)$"
+pattern2 = r"Prize: X=(\d+), Y=(\d+)$"
+addValue = 10000000000000
+def parseInput(input):
+    data = []
+
+    i = 0
+    while i < len(input):
+        this = {}
+        match = re.search(pattern=pattern1,string=input[i])
+        this["ax"] = int(match.groups()[1])
+        this["ay"] = int(match.groups()[2])
+
+        i += 1
+        match = re.search(pattern=pattern1,string=input[i])
+        this["bx"] = int(match.groups()[1])
+        this["by"] = int(match.groups()[2])
+
+        i += 1
+        match = re.search(pattern=pattern2,string=input[i])
+        this["px"] = int(match.groups()[0]) + addValue
+        this["py"] = int(match.groups()[1]) + addValue
+
+        data.append(this)
+
+        i += 2
+
+
+    return data
+
+aCost = 3
+bCost = 1
+maxPushes = 100
+
+def computePushes(box):
+    ax = box["ax"]
+    ay = box["ay"]
+    bx = box["bx"]
+    by = box["by"]
+    px = box["px"]
+    py = box["py"]
+
+    minCost = (aCost * maxPushes + bCost * maxPushes) + 1
+
+
+    bCount, bRem = divmod(ay * px - ax * py, ay * bx - ax * by)
+    aCount, aRem = divmod(px - bCount * bx, ax)
+
+    if bRem or aRem:
+        aCount = None
+        bCount = None
+
+    # M = bx*ay - ax*by
+
+    # if M == 0:
+    #     pd("not unique")
+    # else:
+
+    #     bCount = (px*by - py*ax)/M
+    #     aCount = (px - bCount*bx)/ax
+
+        # if ( bCount1 == int(bCount1) and
+        #      aCount1*ay + bCount1*by == py and
+        #      0 <= bCount1 <= 100 and 
+        #      (aCount1*aCost) + (bCount1*bCost) < minCost):
+        #     bCount1 = int(bCount1)
+        #     minCost = (aCount1*aCost) + (bCount1*bCost)
+        #     aCount = aCount1
+        #     bCount = bCount1
+        #     pd(f"{aCount1},{bCount1}")
+
+        # if ( aCount2 == int(aCount2) and
+        #      aCount2*ay + bCount2*by == py and 
+        #      0 <= aCount2 <= 100 and
+        #      (aCount2*aCost) + (bCount2*bCost) < minCost):
+        #     aCount2 = int(aCount2)
+        #     minCost = (aCount2*aCost) + (bCount2*bCost)
+        #     aCount = aCount2
+        #     bCount = bCount2
+        #     pd(f"{aCount2},{bCount2}")
+
+
+    box["bCount"] = bCount
+    box["aCount"] = aCount
+
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+
+tokensNeeded = 0
+for box in data:
+    computePushes(box)
+    aCount = box["aCount"]
+    bCount = box["bCount"]
+
+    if aCount:
+        # pd(f"a: {aCount}  b: {bCount}  c: {(aCount*aCost) + (bCount*bCost)}")
+        tokensNeeded += (aCount*aCost) + (bCount*bCost)
+
+    # pd("-")
+
+
+# pd(data)
+
+
+
+p(tokensNeeded)

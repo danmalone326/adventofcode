@@ -120,6 +120,36 @@ def clearBit(value,bit):
 def getBit(value,bit):
     return value & 1 << bit != 0 
 
+def isCorner(this,n1,n2,o):
+    n1Match = this == n1
+    n2Match = this == n2
+    oMatch  = this == o
+
+    result = None
+    if n1Match != n2Match:
+        result = oMatch
+    elif oMatch:
+        result = not n1Match
+    else:
+        result = not oMatch
+    
+    # pd(f"{this}: {n1} {n2} {o} {result}")
+    return result
+
+def isInsideCorner(this,n1,n2,o):
+    n1Match = this == n1
+    n2Match = this == n2
+    oMatch  = this == o
+
+    return n1Match != n2Match and oMatch
+
+def isOutsideCorner(this,n1,n2,o):
+    n1Match = this == n1
+    n2Match = this == n2
+    oMatch  = this == o
+
+    return not n1Match and not n2Match
+
 def areaPerimeter(data,used,x,y):
     char = getGrid(data,x,y,None)
 
@@ -130,6 +160,7 @@ def areaPerimeter(data,used,x,y):
 
     area=0
     perimeter=0
+    corners = set()
 
 
     if not getBit(used[y],x):
@@ -140,9 +171,10 @@ def areaPerimeter(data,used,x,y):
         ny = y
         if getGrid(data,nx,ny) == char:
             if not getBit(used[ny],nx):
-                areaInc,perimeterInc = areaPerimeter(data,used,nx,ny)
+                areaInc,perimeterInc,cornersInc = areaPerimeter(data,used,nx,ny)
                 area += areaInc
                 perimeter += perimeterInc
+                corners.update(cornersInc)
         else:
             perimeter += 1
 
@@ -150,9 +182,10 @@ def areaPerimeter(data,used,x,y):
         ny = y
         if getGrid(data,nx,ny) == char:
             if not getBit(used[ny],nx):
-                areaInc,perimeterInc = areaPerimeter(data,used,nx,ny)
+                areaInc,perimeterInc,cornersInc = areaPerimeter(data,used,nx,ny)
                 area += areaInc
                 perimeter += perimeterInc
+                corners.update(cornersInc)
         else:
             perimeter += 1
 
@@ -160,9 +193,10 @@ def areaPerimeter(data,used,x,y):
         ny = y+1
         if getGrid(data,nx,ny) == char:
             if not getBit(used[ny],nx):
-                areaInc,perimeterInc = areaPerimeter(data,used,nx,ny)
+                areaInc,perimeterInc,cornersInc = areaPerimeter(data,used,nx,ny)
                 area += areaInc
                 perimeter += perimeterInc
+                corners.update(cornersInc)
         else:
             perimeter += 1
 
@@ -170,13 +204,52 @@ def areaPerimeter(data,used,x,y):
         ny = y-1
         if getGrid(data,nx,ny) == char:
             if not getBit(used[ny],nx):
-                areaInc,perimeterInc = areaPerimeter(data,used,nx,ny)
+                areaInc,perimeterInc,cornersInc = areaPerimeter(data,used,nx,ny)
                 area += areaInc
                 perimeter += perimeterInc
+                corners.update(cornersInc)
         else:
             perimeter += 1
 
-    return area, perimeter
+
+
+        # top left
+        n1 = getGrid(data,x-1,y)
+        n2 = getGrid(data,x,y-1)
+        o = getGrid(data,x-1,y-1)
+        if isInsideCorner(char,n1,n2,o):
+            corners.update([f'{x},{y}'])
+        if isOutsideCorner(char,n1,n2,o):
+            corners.update([f'{x},{y},{x},{y}'])
+
+        # top right
+        n1 = getGrid(data,x+1,y)
+        n2 = getGrid(data,x,y-1)
+        o = getGrid(data,x+1,y-1)
+        if isInsideCorner(char,n1,n2,o):
+            corners.update([f'{x+1},{y}'])
+        if isOutsideCorner(char,n1,n2,o):
+            corners.update([f'{x+1},{y},{x},{y}'])
+
+        # bottom left
+        n1 = getGrid(data,x-1,y)
+        n2 = getGrid(data,x,y+1)
+        o = getGrid(data,x-1,y+1)
+        if isInsideCorner(char,n1,n2,o):
+            corners.update([f'{x},{y+1}'])
+        if isOutsideCorner(char,n1,n2,o):
+            corners.update([f'{x},{y+1},{x},{y}'])
+
+        # bottom right
+        n1 = getGrid(data,x+1,y)
+        n2 = getGrid(data,x,y+1)
+        o = getGrid(data,x+1,y+1)
+        if isInsideCorner(char,n1,n2,o):
+            corners.update([f'{x+1},{y+1}'])
+        if isOutsideCorner(char,n1,n2,o):
+            corners.update([f'{x+1},{y+1},{x},{y}'])
+
+    return area, perimeter, corners
 
 
 def parseInput(input):
@@ -199,7 +272,9 @@ sum = 0
 for y in range(len(data)):
     for x in range(len(data[0])):
         if not getBit(used[y],x):
-            area,perimeter = areaPerimeter(data,used,x,y)
-            sum += area*perimeter
+            area,perimeter,corners = areaPerimeter(data,used,x,y)
+            region = getGrid(data,x,y)
+            pd(f"Region {region} with area {area} and corners {len(corners)} = {area * len(corners)}")
+            sum += area*len(corners)
 
 p(sum)

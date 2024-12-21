@@ -1,0 +1,10 @@
+2,4, - B = A mod 8
+1,3, - B = B xor 3
+7,5, - C = A div 2^B
+0,3, - A = A div 2^3  (8)
+1,5, - B = B xor 5    (0x101)
+4,1, - B = B xor C
+5,5, - output B
+3,0  - if A>0 jump to 0
+
+Used google sheet to figure out a way to do this.
