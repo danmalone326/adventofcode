@@ -1,0 +1,364 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+
+debug=True
+
+def p(obj,timePrefix = False, newLine = True):
+    if newLine:
+        end = "\n"
+    else:
+        end = ""
+
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [set,frozenset]:
+        printableObj = list(obj)
+    else:
+        printableObj = obj
+
+    if type(printableObj) in [str,int]:
+        print(printableObj,end=end)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(printableObj, indent=2),end=end)
+
+def pd(obj,timePrefix = False,newLine = True):
+    if debug:
+        p(obj,timePrefix=timePrefix,newLine=newLine)
+
+def pdCharGrid(grid):
+    if debug:
+        for y in range(len(grid)):
+            pd(''.join(grid[y]))
+
+def wait():
+    if debug:
+        input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfSpaceSeparatedDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.split(" "))])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def initGrid(xSize,ySize,obj):
+    grid = []
+    for y in range(ySize):
+        row = []
+        for x in range(xSize):
+            row.append(copy.deepcopy(obj))
+        grid.append(row)
+    return grid
+
+def getGrid(grid,x,y,outOfBoundsObj=None):
+    result = None
+    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
+        result = outOfBoundsObj
+    else:
+        result = grid[y][x]
+    return result
+
+def setGrid(grid,x,y,obj):
+    grid[y][x] = obj
+
+def findGrid(grid,obj):
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if getGrid(grid,x,y) == obj:
+                return x,y
+
+def setBit(value,bit):
+    return value | (1<<bit)
+
+def clearBit(value,bit):
+    return value & ~(1<<bit)
+
+def getBit(value,bit):
+    return value & 1 << bit != 0 
+
+dirList = ["^",">","v","<"]
+def nextPosition(x,y,d):
+    nX = x
+    nY = y
+    if d == "^": 
+        nY -= 1
+    elif d == ">":
+        nX += 1
+    elif d == "v":
+        nY += 1
+    elif d == "<":
+        nX -= 1
+    else:
+        raise ValueError
+
+    return nX,nY
+
+def parseInput(input):
+    data = [list(row) for row in input]
+    return data
+
+def getEmptyNeighbors(grid,pathCost,x,y):
+    neighbors = set()
+    if getGrid(grid,x+1,y) == '.' and getGrid(pathCost,x+1,y,-1) == None:
+        neighbors.add((x+1,y))
+    if getGrid(grid,x-1,y) == '.' and getGrid(pathCost,x-1,y,-1) == None:
+        neighbors.add((x-1,y))
+    if getGrid(grid,x,y+1) == '.' and getGrid(pathCost,x,y+1,-1) == None:
+        neighbors.add((x,y+1))
+    if getGrid(grid,x,y-1) == '.' and getGrid(pathCost,x,y-1,-1) == None:
+        neighbors.add((x,y-1))
+    return neighbors
+
+def getLowestNeighbor(grid,x,y):
+    # pd((x,y))
+    result = None
+    neighborCosts = []
+    thisCost = getGrid(grid,x+1,y)
+    if thisCost != None:
+        neighborCosts.append(thisCost)
+    thisCost = getGrid(grid,x-1,y)
+    if thisCost != None:
+        neighborCosts.append(thisCost)
+    thisCost = getGrid(grid,x,y+1)
+    if thisCost != None:
+        neighborCosts.append(thisCost)
+    thisCost = getGrid(grid,x,y-1)
+    if thisCost != None:
+        neighborCosts.append(thisCost)
+    if len(neighborCosts) > 0:
+        result = min(neighborCosts)
+    return result
+
+def getAllNeighborCosts(grid,x,y,remainingSteps):
+    # pd((x,y))
+    result = set()
+    if getGrid(grid,x,y):
+        thisCost = getGrid(grid,x+1,y)
+        if thisCost != None:
+            result.add((x+1,y,thisCost,remainingSteps))
+        thisCost = getGrid(grid,x-1,y)
+        if thisCost != None:
+            result.add((x-1,y,thisCost,remainingSteps))
+        thisCost = getGrid(grid,x,y+1)
+        if thisCost != None:
+            result.add((x,y+1,thisCost,remainingSteps))
+        thisCost = getGrid(grid,x,y-1)
+        if thisCost != None:
+            result.add((x,y-1,thisCost,remainingSteps))
+    return result
+
+def getLowestNeighborWithSteps(grid,x,y,steps):
+    remainingSteps = steps - 1
+    if remainingSteps == 0:
+        result = getLowestNeighbor(grid,x,y)
+    else:
+        # pd((x,y))
+        neighborCosts = []
+        thisCost = getLowestNeighborWithSteps(grid,x+1,y,remainingSteps)
+        if thisCost != None:
+            neighborCosts.append(thisCost)
+        thisCost = getLowestNeighborWithSteps(grid,x-1,y,remainingSteps)
+        if thisCost != None:
+            neighborCosts.append(thisCost)
+        thisCost = getLowestNeighborWithSteps(grid,x,y+1,remainingSteps)
+        if thisCost != None:
+            neighborCosts.append(thisCost)
+        thisCost = getLowestNeighborWithSteps(grid,x,y-1,remainingSteps)
+        if thisCost != None:
+            neighborCosts.append(thisCost)
+        if len(neighborCosts) > 0:
+            result = min(neighborCosts)
+    return result
+
+neighborCostCache = {}
+def getAllNeighborsWithSteps(mapGrid,stepsGrid,x,y,takenSteps,maxSteps):
+    remainingSteps = maxSteps-takenSteps
+    myCacheKey = (x,y,remainingSteps)
+    if myCacheKey in neighborCostCache:
+        result = neighborCostCache[myCacheKey]
+    else:
+        if x<0 or x>=len(stepsGrid[0]) or y<0 or y>=len(stepsGrid):
+            result = None
+        else:
+            result = set()
+            if getGrid(mapGrid,x,y) == ".":
+                thisSteps = getGrid(stepsGrid,x,y)
+                result.add((x,y,thisSteps,takenSteps))
+            if remainingSteps > 0:
+                # pd((x,y))
+                for d in dirList:
+                    nx,ny = nextPosition(x,y,d)
+                    thisResult = getAllNeighborsWithSteps(mapGrid,stepsGrid,nx,ny,takenSteps+1,maxSteps)
+                    if thisResult != None:
+                        result.update(thisResult)
+   
+        neighborCostCache[myCacheKey] = result
+    
+    return result
+
+# def getAllNeighborsWithSteps(stepsGrid,x,y,steps):
+#     myCacheKey = (x,y,steps)
+#     if myCacheKey in neighborCostCache:
+#         result = neighborCostCache[myCacheKey]
+#     else:
+#         if x<0 or x>=len(stepsGrid[0]) or y<0 or y>=len(stepsGrid):
+#             result = None
+#         else:
+#             result = set()
+#             result.update(getAllNeighborCosts(stepsGrid,x,y,steps))
+#             if steps > 0:
+#                 remainingSteps = steps - 1
+#                 # pd((x,y))
+#                 thisResult = getAllNeighborsWithSteps(stepsGrid,x+1,y,remainingSteps)
+#                 if thisResult != None:
+#                     result.update(thisResult)
+#                 thisResult = getAllNeighborsWithSteps(stepsGrid,x-1,y,remainingSteps)
+#                 if thisResult != None:
+#                     result.update(thisResult)
+#                 thisResult = getAllNeighborsWithSteps(stepsGrid,x,y+1,remainingSteps)
+#                 if thisResult != None:
+#                     result.update(thisResult)
+#                 thisResult = getAllNeighborsWithSteps(stepsGrid,x,y-1,remainingSteps)
+#                 if thisResult != None:
+#                     result.update(thisResult)
+
+#         neighborCostCache[myCacheKey] = result
+    
+#     return result
+
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+mapGrid = parseInput(sourceInput)
+# pdCharGrid(grid)
+pd(f"width: {len(mapGrid[0])}  height: {len(mapGrid)}")
+
+startX,startY = findGrid(mapGrid,"S")
+setGrid(mapGrid,startX,startY,".")
+
+endX,endY = findGrid(mapGrid,"E")
+setGrid(mapGrid,endX,endY,".")
+
+stepsGrid = initGrid(len(mapGrid[0]),len(mapGrid),None)
+# pd(stepsGrid)    
+
+setGrid(stepsGrid,endX,endY,0)
+checkList = getEmptyNeighbors(mapGrid,stepsGrid,endX,endY)
+while checkList:
+    x,y = checkList.pop()
+    thisCost = getLowestNeighbor(stepsGrid,x,y) + 1
+    setGrid(stepsGrid,x,y,thisCost)
+    checkList.update(getEmptyNeighbors(mapGrid,stepsGrid,x,y))
+
+pd("finished initial path")
+
+cheatSteps = 20
+savingCount = {}
+savingsGrid = initGrid(len(mapGrid[0]),len(mapGrid),None)
+for y in range(len(savingsGrid)):
+    pd(f"row: {y}",timePrefix=True)
+    for x in range(len(savingsGrid[0])):
+        currentCost = getGrid(stepsGrid,x,y)
+        if currentCost is not None:
+            #getAllNeighborsWithSteps(mapGrid,stepsGrid,x,y,stepsTaken,maxSteps):
+            ends = getAllNeighborsWithSteps(mapGrid,stepsGrid,x,y,0,cheatSteps)
+            # pd(list(ends))
+            bestSavings = {}
+            for end in ends:
+                key = (end[0],end[1])
+                newCost = end[2] + end[3]
+                if newCost < currentCost:
+                    savings = currentCost - newCost
+                    if key not in bestSavings or savings > bestSavings[key]:
+                        bestSavings[key] = savings
+
+            for savingsKey in bestSavings:
+                savings = bestSavings[savingsKey]
+                keyInit(savingCount,savings,0)
+                savingCount[savings] += 1
+            # if lowest:
+            #     newCost = lowest+cheatSteps
+            #     if newCost < currentCost:
+            #         savings = currentCost - newCost
+            #         keyInit(savingCount,savings,0)
+            #         savingCount[savings] += 1
+            #         setGrid(savingsGrid,x,y,savings)
+
+answer = 0
+for key in sorted(savingCount.keys()):
+    p(f"There are {savingCount[key]} cheats that save {key} picoseconds.")
+    if key >= 100:
+        answer += savingCount[key]
+
+            
+
+p(answer)

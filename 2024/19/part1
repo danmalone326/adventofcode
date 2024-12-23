@@ -105,15 +105,6 @@ def keyInit(dict,key,initialValue):
     if (key not in dict):
         dict[key] = initialValue
 
-def initGrid(xSize,ySize,obj):
-    grid = []
-    for y in range(ySize):
-        row = []
-        for x in range(xSize):
-            row.append(copy.deepcopy(obj))
-        grid.append(row)
-    return grid
-
 def getGrid(grid,x,y,outOfBoundsObj=None):
     result = None
     if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
@@ -125,12 +116,6 @@ def getGrid(grid,x,y,outOfBoundsObj=None):
 def setGrid(grid,x,y,obj):
     grid[y][x] = obj
 
-def findGrid(grid,obj):
-    for y in range(len(grid)):
-        for x in range(len(grid[0])):
-            if getGrid(grid,x,y) == obj:
-                return x,y
-
 def setBit(value,bit):
     return value | (1<<bit)
 
@@ -140,26 +125,34 @@ def clearBit(value,bit):
 def getBit(value,bit):
     return value & 1 << bit != 0 
 
-dirList = ["^",">","v","<"]
-def nextPosition(x,y,d):
-    nX = x
-    nY = y
-    if d == "^": 
-        nY -= 1
-    elif d == ">":
-        nX += 1
-    elif d == "v":
-        nY += 1
-    elif d == "<":
-        nX -= 1
-    else:
-        raise ValueError
-
-    return nX,nY
-
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
-    return data
+    towelPatterns = input[0].split(", ")
+    data = input[2:]
+    return towelPatterns, data
+
+patternKeys = {}
+def patternPossible(design,towelPatterns):
+    global patternKeys
+    # pd(f"checking design: {design}")
+    if design in patternKeys:
+        result = patternKeys[design]
+    else:
+        result = False
+        for towel in towelPatterns:
+            if towel == design[:len(towel)]:
+                if len(towel) == len(design):
+                    result = True
+                else:
+                    result = patternPossible(design[len(towel):],towelPatterns)
+                if result:
+                    # pd(f"{towel}, ",newLine=False)
+                    break
+                else:
+                    # pd("")
+                    pass
+        patternKeys[design] = result
+    
+    return result
 
 debug = True
 
@@ -168,7 +161,18 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+towelPatterns, data = parseInput(sourceInput)
+# pd(towelPatterns)
+# pd(data)
 
-p(1)
+sortedTowels = sorted(towelPatterns,key=len)
+
+count = 0
+for design in data:
+    if patternPossible(design,sortedTowels):
+        count += 1
+        pd(f"{design} -> Yes", timePrefix=True)
+    else:
+        pd(f"{design} -> impossible", timePrefix=True)
+
+p(count)

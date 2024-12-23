@@ -20,12 +20,17 @@ def p(obj,timePrefix = False, newLine = True):
         now = datetime.now()
         print('{}: '.format(str(now.time()).split('.')[0]),end="")
 
-    if type(obj) in [str,int]:
-        print(obj,end=end)
+    if type(obj) in [set,frozenset]:
+        printableObj = list(obj)
+    else:
+        printableObj = obj
+
+    if type(printableObj) in [str,int]:
+        print(printableObj,end=end)
     else:
         if timePrefix:
             print('')
-        print(json.dumps(obj, indent=2),end=end)
+        print(json.dumps(printableObj, indent=2),end=end)
 
 def pd(obj,timePrefix = False,newLine = True):
     if debug:
@@ -121,8 +126,84 @@ def getBit(value,bit):
     return value & 1 << bit != 0 
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = []
+    for line in input:
+        data.append([int(a) for a in line.split(',')])
     return data
+
+def getEmptyNeighbors(grid,pathCost,x,y):
+    neighbors = set()
+    if getGrid(grid,x+1,y) == '.' and getGrid(pathCost,x+1,y,-1) == None:
+        neighbors.add((x+1,y))
+    if getGrid(grid,x-1,y) == '.' and getGrid(pathCost,x-1,y,-1) == None:
+        neighbors.add((x-1,y))
+    if getGrid(grid,x,y+1) == '.' and getGrid(pathCost,x,y+1,-1) == None:
+        neighbors.add((x,y+1))
+    if getGrid(grid,x,y-1) == '.' and getGrid(pathCost,x,y-1,-1) == None:
+        neighbors.add((x,y-1))
+    return neighbors
+
+def getLowestNeighbor(grid,x,y):
+    # pd((x,y))
+    neighborCosts = []
+    thisCost = getGrid(grid,x+1,y)
+    if thisCost != None:
+        neighborCosts.append(thisCost)
+    thisCost = getGrid(grid,x-1,y)
+    if thisCost != None:
+        neighborCosts.append(thisCost)
+    thisCost = getGrid(grid,x,y+1)
+    if thisCost != None:
+        neighborCosts.append(thisCost)
+    thisCost = getGrid(grid,x,y-1)
+    if thisCost != None:
+        neighborCosts.append(thisCost)
+    if len(neighborCosts) > 0:
+        result = min(neighborCosts)
+    return result
+
+def findShortestPath(grid,start,end):
+    pathCost = []
+    for y in range(len(grid)):
+        row = []
+        for x in range(len(grid[0])):
+            row.append(None)
+        pathCost.append(row)
+
+    setGrid(pathCost,end[0],end[1],0)
+    checkSet = set()
+    checkSet.update(getEmptyNeighbors(grid,pathCost,end[0],end[1]))
+
+    while checkSet and getGrid(pathCost,start[0],start[1]) == None:
+        # pd(".",newLine=False)
+        x,y = checkSet.pop()
+        myCost = getLowestNeighbor(pathCost,x,y) + 1
+        setGrid(pathCost,x,y,myCost)
+        checkSet.update(getEmptyNeighbors(grid,pathCost,x,y))
+
+    # pd(".")
+    result = getGrid(pathCost,start[0],start[1])
+    return result
+
+
+def isFallen(data,x,y,time):
+    return [x,y] in data[:time]
+
+
+def makeGrid(data,gridMax,time):
+    grid = []
+    for y in range(gridMax+1):
+        row = []
+        for x in range(gridMax+1):
+            if isFallen(data,x,y,time):
+                char = "#"
+            else:
+                char = "."
+            row.append(char)
+        grid.append(row)
+    return grid
+
+
 
 debug = True
 
@@ -130,8 +211,25 @@ sourceInput = getInput()
 
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
+gridMax,time = [int(a) for a in sourceInput[0].split(",")]
+data = parseInput(sourceInput[1:])
 
-data = parseInput(sourceInput)
-pd(data)
+pd(gridMax)
+pd(time)
+# pd(data)
+minTime = 1
+maxTime = len(data)
 
-p(1)
+while minTime != maxTime:
+    tryTime = math.ceil((minTime + maxTime) / 2)
+    pd(f"min: {minTime}  max: {maxTime}")
+    p(f"time: {tryTime}  x,y: {data[tryTime-1][0]},{data[tryTime-1][1]}")
+    grid = makeGrid(data,gridMax,tryTime)
+    # pdCharGrid(grid)
+    pathLength = findShortestPath(grid,(0,0),(gridMax,gridMax))
+    p(pathLength)
+    if pathLength == None:
+        maxTime = tryTime-1
+    else:
+        minTime = tryTime
+    # wait()
