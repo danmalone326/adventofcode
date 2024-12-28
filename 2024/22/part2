@@ -100,7 +100,6 @@ def findBlankLine(lines):
     for i in range(len(lines)):
         if (lines[i].strip() == ""):
             return i
-    return -1
 
 def keyInit(dict,key,initialValue):
     if (key not in dict):
@@ -159,8 +158,28 @@ def nextPosition(x,y,d):
     return nX,nY
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = [int(a) for a in input]
     return data
+
+
+def mix(sn,value):
+    return sn ^ value
+
+def prune(sn):
+    return sn & 16777215
+
+def prng(input): 
+    sn = input
+    sn = (sn << 6) ^ sn
+    sn = sn & 16777215
+    
+    sn = (sn >> 5) ^ sn
+    sn = sn & 16777215
+
+    sn = (sn << 11) ^ sn
+    sn = sn & 16777215
+    return sn
+
 
 debug = True
 
@@ -170,6 +189,61 @@ sourceInput = getInput()
 # p(data)
 
 data = parseInput(sourceInput)
-pd(data)
+# pd(data)
 
-p(1)
+# data = [123]
+
+priceList = [[a%10] for a in data]
+changeList = [[None] for i in range(len(data))]
+patternList = [[None] for i in range(len(data))]
+patternMax = {}
+
+count = 2000
+for i in range(count):
+    for x in range(len(data)):
+        a = prng(data[x])
+        data[x] = a
+        priceList[x].append(a%10)
+        changeList[x].append(priceList[x][i+1] - priceList[x][i])
+        if i < 3:
+            patternList[x].append(None)
+        else: 
+            thisPattern = (changeList[x][i-2],changeList[x][i-1],changeList[x][i],changeList[x][i+1])
+            patternList[x].append(thisPattern)
+            keyInit(patternMax,thisPattern,0)
+            patternMax[thisPattern] += priceList[x][i+1]
+
+
+# pd(priceList)
+# pd(changeList)
+# pd(patternList)
+
+allPatterns = set()
+for x in range(len(data)):
+    allPatterns.update(patternList[x])
+
+allPatterns.remove(None)
+pd(f"patterns to check: {len(allPatterns)}")
+# pd(list(allPatterns))
+
+maxSum = 0
+counter = 0
+for thisPattern in reversed(sorted(patternMax, key=patternMax.get)):
+    counter += 1
+    if counter % 1 == 0:
+        pd(f"checking {counter}",timePrefix=True)
+    if patternMax[thisPattern] < maxSum:
+        break
+    thisSum = 0
+    for x in range(len(data)):
+        try:
+            thisIndex = patternList[x].index(thisPattern)
+            thisSum += priceList[x][thisIndex]
+        except ValueError:
+            pass
+    if thisSum > maxSum:
+        maxSum = thisSum
+        pd(maxSum)
+
+
+pd(maxSum)

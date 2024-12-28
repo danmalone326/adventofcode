@@ -100,7 +100,6 @@ def findBlankLine(lines):
     for i in range(len(lines)):
         if (lines[i].strip() == ""):
             return i
-    return -1
 
 def keyInit(dict,key,initialValue):
     if (key not in dict):
@@ -159,8 +158,52 @@ def nextPosition(x,y,d):
     return nX,nY
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = {}
+    blankIndex = findBlankLine(input)
+    for line in input[:blankIndex]:
+        key,value = line.split(":")
+        data[key] = int(value.strip())
+
+    for line in input[blankIndex+1:]:
+        splitLine = line.split(" ")
+        data[splitLine[-1]] = splitLine[:3]
+
     return data
+
+def getValue(data,key):
+    result = None
+    if key in data:
+        if isinstance(data[key], int):
+            return data[key]
+        else:
+            formula = data[key]
+            a = getValue(data,formula[0])
+            b = getValue(data,formula[2])
+
+            operator = formula[1]
+            if operator == "AND":
+                result = a & b
+            elif operator == "XOR":
+                result = a ^ b
+            elif operator == "OR":
+                result = a | b
+
+            # data[key] = result
+
+    return result
+
+def filterKeys(data,char):
+    return list(filter(lambda x: x.startswith(char) ,data.keys()))
+
+def getNumber(data,char):
+    result = 0
+    for key in reversed(sorted(filterKeys(data,char))):
+        value = getValue(data,key)
+        # pd(f"value: {value}")
+        result = (result << 1) + value
+        # pd(f"result: {result}")
+    return result
+
 
 debug = True
 
@@ -169,7 +212,8 @@ sourceInput = getInput()
 # data = arrayFromGridOfDigits(sourceInput)
 # p(data)
 
-data = parseInput(sourceInput)
-pd(data)
+originalData = parseInput(sourceInput)
+# pd(data)
+pd(getNumber(originalData,"z"))
 
-p(1)
+

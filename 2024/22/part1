@@ -100,7 +100,6 @@ def findBlankLine(lines):
     for i in range(len(lines)):
         if (lines[i].strip() == ""):
             return i
-    return -1
 
 def keyInit(dict,key,initialValue):
     if (key not in dict):
@@ -159,8 +158,28 @@ def nextPosition(x,y,d):
     return nX,nY
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = [int(a) for a in input]
     return data
+
+
+def mix(sn,value):
+    return sn ^ value
+
+def prune(sn):
+    return sn & 16777215
+
+def prng(input): 
+    sn = input
+    sn = (sn << 6) ^ sn
+    sn = sn & 16777215
+    
+    sn = (sn >> 5) ^ sn
+    sn = sn & 16777215
+
+    sn = (sn << 11) ^ sn
+    sn = sn & 16777215
+    return sn
+
 
 debug = True
 
@@ -172,4 +191,14 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+
+count = 2000
+for i in range(count):
+    for x in range(len(data)):
+        data[x] = prng(data[x])
+
+sum = 0
+for x in range(len(data)):
+    sum += data[x]
+
+pd(sum)

@@ -1,0 +1,55 @@
+part 1:
+167416 too high
+157908 !
+
+part 2:
+363455103498394 too high
+274977233821072 too high
+79155940565732 too low
+
+<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A
+v<<A>>^A<A>AvA<^AA>A<vAAA>^A
+>>^A<A>AvA^<AA>Av<AAA^>A
+<A^A>^^AvvvA
+<A^A>^^AvvvA
+029A
+
+  "029A": "<A^A>^^AvvvA"
+  "029A": ">>^A<A>AvA^<AA>Av<AAA^>A"
+  "029A": "A^<A>Av<<A>>^AvA^Av<A^>A<Av<A>>^AAvA^Av<A<A>>^AAA<A>vA^A"
+
+
+
+029A: <vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A
+029A: <vA<AA>>^AvAA^<A>Av<<A>>^AvA^Av<<A>>^AA<vA>A^A<A>Av<<A>A^>AAA<Av>A^A
+
+980A: <v<A>>^AAAvA^A<vA<AA>>^AvAA<^A>A<v<A>A>^AAAvA<^A>A<vA>^A<A>A
+980A: v<<A>>^AAAvA^A<vA<AA>>^AvAA^<A>Av<<A>A^>AAA<Av>A^A<vA^>A<A>A
+
+179A: <v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
+179A: v<<A>>^A<vA<A>>^AAvAA^<A>Av<<A>>^AAvA^A<vA^>AA<A>Av<<A>A^>AAA<Av>A^A
+
+456A: <v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A
+456A: v<<A>>^AA<vA<A>>^AAvAA^<A>A<vA^>A<A>A<vA^>A<A>Av<<A>A^>AA<Av>A^A
+
+379A: <v<A >>^A vA ^A  <vA   <A A >>^A  A   vA <^A >A A  vA ^A <vA >^A A<A >A <v<A >A >^A A A vA <^A >A
+379A: v<<A >>^A vA ^A v<<A >>^A A  <vA <A >>^A   A vA A ^<A >A <vA ^>A A<A >A v<<A >A ^>A A A <A v>A ^A
+                    3  333   33 3   32  1   11 111 14 7  77 77
+                    A  AA>   >v <   <<  <   <v vv^ ^^ ^  ^A AA
+                    A  ^vv   << <   AA  A   >> v^^ AA A  >> AA
+
+                    3 3333   36 9   99 99   98   7 77 7 777 77
+                    A AAA^   ^^ ^   ^v v<   <<   < <v > >>A AA
+                    A >v<<   AA A   vv <<   AA   A >> > A^^ AA
+
+23
+27
+
+{
+  "029A": "<vA<AA>>^AvAA^<A>Av<<A>>^AvA^Av<<A>>^AA<vA>A^A<A>Av<<A>A^>AAA<Av>A^A",
+  "980A": "v<<A>>^AAAvA^A<vA<AA>>^AvAA^<A>Av<<A>A^>AAA<Av>A^A<vA^>A<A>A",
+  "179A": "v<<A>>^A<vA<A>>^AAvAA^<A>Av<<A>>^AAvA^A<vA^>AA<A>Av<<A>A^>AAA<Av>A^A",
+  "456A": "v<<A>>^AA<vA<A>>^AAvAA^<A>A<vA^>A<A>A<vA^>A<A>Av<<A>A^>AA<Av>A^A",
+  "379A": "v<<A >>^A vA ^A v<<A >>^A A <vA <A >>^A A vA A ^<A >A <vA ^>A A <A>Av<<A>A^>AAA<Av>A^A"
+}
+

@@ -1,0 +1,507 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+
+debug=True
+
+def p(obj,timePrefix = False, newLine = True):
+    if newLine:
+        end = "\n"
+    else:
+        end = ""
+
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [set,frozenset]:
+        printableObj = list(obj)
+    else:
+        printableObj = obj
+
+    if type(printableObj) in [str,int]:
+        print(printableObj,end=end)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(printableObj, indent=2),end=end)
+
+def pd(obj,timePrefix = False,newLine = True):
+    if debug:
+        p(obj,timePrefix=timePrefix,newLine=newLine)
+
+def pdCharGrid(grid):
+    if debug:
+        for y in range(len(grid)):
+            pd(''.join(grid[y]))
+
+def wait():
+    if debug:
+        input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfSpaceSeparatedDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.split(" "))])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def initGrid(xSize,ySize,obj):
+    grid = []
+    for y in range(ySize):
+        row = []
+        for x in range(xSize):
+            row.append(copy.deepcopy(obj))
+        grid.append(row)
+    return grid
+
+def getGrid(grid,x,y,outOfBoundsObj=None):
+    result = None
+    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
+        result = outOfBoundsObj
+    else:
+        result = grid[y][x]
+    return result
+
+def setGrid(grid,x,y,obj):
+    grid[y][x] = obj
+
+def findGrid(grid,obj):
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if getGrid(grid,x,y) == obj:
+                return x,y
+
+def setBit(value,bit):
+    return value | (1<<bit)
+
+def clearBit(value,bit):
+    return value & ~(1<<bit)
+
+def getBit(value,bit):
+    return value & 1 << bit != 0 
+
+dirList = ["^",">","v","<"]
+def nextPosition(x,y,d):
+    nX = x
+    nY = y
+    if d == "^": 
+        nY -= 1
+    elif d == ">":
+        nX += 1
+    elif d == "v":
+        nY += 1
+    elif d == "<":
+        nX -= 1
+    else:
+        raise ValueError
+
+    return nX,nY
+
+def parseInput(input):
+    data = {}
+    for key in input:
+        data[key] = key
+    return data
+
+def getAllSequences(grid):
+    allKeys = []
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            thisKey = getGrid(grid,x,y)
+            if thisKey != " ":
+                allKeys.append(thisKey)
+    
+    sequences = {}
+    for fromKey in allKeys:
+        for toKey in allKeys:
+            sequenceKey = f"{fromKey}{toKey}"
+            # pd(f"move: {sequenceKey}")
+            fromX, fromY = findGrid(grid,fromKey)
+            toX, toY = findGrid(grid,toKey)
+            dX = toX - fromX
+            dY = toY - fromY
+
+            if dX == 0:
+                xPress = ""
+            elif dX > 0:
+                xPress = ">" * dX
+            else:
+                xPress = "<" * -dX
+
+            if dY == 0:
+                yPress = ""
+            elif dY > 0:
+                yPress = "v" * dY
+            else:
+                yPress = "^" * -dY
+
+
+            sequences[sequenceKey] = []
+            if dX < 0:
+                thisSequence = {
+                    xPress + yPress,
+                    yPress + xPress
+                }
+            elif dY > 0: 
+                thisSequence = {
+                    yPress + xPress,
+                    xPress + yPress
+                }
+            else:
+                thisSequence = {
+                    xPress + yPress,
+                    yPress + xPress
+                }
+
+            
+            validSequences = []
+            for sequence in thisSequence:
+                # pd(f"sequence: {sequence}")
+                testX = fromX
+                testY = fromY
+                valid = True
+                for dir in sequence:
+                    # pd(f"dir: {dir}")
+                    testX,testY = nextPosition(testX,testY,dir)
+                    # pd(f"x,y: {testX},{testY}")
+                    char = getGrid(grid,testX,testY)
+                    # pd(f"{char}")
+                    if char not in allKeys:
+                        valid = False
+                        break
+                if valid:
+                    validSequences.append(sequence+"A")
+
+            
+            sequences[sequenceKey] = validSequences
+    
+    return sequences
+
+
+# def mapToParent(sequences, parentSequences):
+#     newSequences = {}
+#     for key in sequences.keys():
+#         thisSequence = "A"+sequences[key]
+#         newSequence = ""
+#         for i in range(len(thisSequence)-1):
+#             parentKey = thisSequence[i:i+2]
+#             newSequence += parentSequences[parentKey]
+#         newSequences[key] = newSequence
+#     return newSequences
+
+def pdSequences(sequences):
+    for key in sequences.keys():
+        pd(f"{len(sequences[key]):3} - {key}: {sequences[key]}")
+
+# def getBaseSequence(sequence):
+#     movePart = sequence.strip("A")
+#     baseSequence = "".join(dict.fromkeys(movePart))
+#     extra = len(movePart) - len(baseSequence)
+#     return baseSequence, extra
+
+# def getSequenceLengthsWithBase(grid,baseMap):
+#     allKeys = []
+#     for y in range(len(grid)):
+#         for x in range(len(grid[0])):
+#             thisKey = getGrid(grid,x,y)
+#             if thisKey != " ":
+#                 allKeys.append(thisKey)
+    
+#     sequenceLengths = {}
+#     for fromKey in allKeys:
+#         for toKey in allKeys:
+#             sequenceKey = f"{fromKey}{toKey}"
+#             # pd(f"move: {sequenceKey}")
+#             fromX, fromY = findGrid(grid,fromKey)
+#             toX, toY = findGrid(grid,toKey)
+#             dX = toX - fromX
+#             dY = toY - fromY
+
+#             if dX == 0:
+#                 xPress = ""
+#             elif dX > 0:
+#                 xPress = ">" * dX
+#             else:
+#                 xPress = "<" * -dX
+
+#             if dY == 0:
+#                 yPress = ""
+#             elif dY > 0:
+#                 yPress = "v" * dY
+#             else:
+#                 yPress = "^" * -dY
+
+
+#             thisSequence = {
+#                 xPress + yPress,
+#                 yPress + xPress
+#             }
+            
+#             minLength = None
+#             for sequence in thisSequence:
+#                 # pd(f"sequence: {sequence}")
+#                 testX = fromX
+#                 testY = fromY
+#                 valid = True
+#                 for dir in sequence:
+#                     # pd(f"dir: {dir}")
+#                     testX,testY = nextPosition(testX,testY,dir)
+#                     # pd(f"x,y: {testX},{testY}")
+#                     char = getGrid(grid,testX,testY)
+#                     # pd(f"{char}")
+#                     if char not in allKeys:
+#                         valid = False
+#                         break
+
+#                 if valid:
+#                     thisBase,thisAdditional = getBaseSequence(sequence)
+#                     thisBaseLength = len(baseMap[thisBase]) + thisAdditional
+#                     if minLength == None or thisBaseLength < minLength:
+#                         minLength = thisBaseLength
+
+            
+#             sequenceLengths[sequenceKey] = minLength
+    
+#     return sequenceLengths
+
+
+# [level][key]
+lengthCache = {}
+def getKeypadSequenceLength(sequence,level,dkSequences):
+    if level in lengthCache:
+        if sequence in lengthCache[level]:
+            result = lengthCache[level][sequence]
+            return result
+    else:
+        lengthCache[level] = {}
+
+    # pd(f"level: {level}  sequence: {sequence}")
+    if level == 0:
+        result = len(sequence)
+    else:
+        needed = "A" + sequence
+        result = 0
+        for i in range(len(needed)-1):
+            thisKey = needed[i] + needed[i+1]
+            nextLevelSequences = dkSequences[thisKey]
+            thisResult = getKeypadSequenceLength(nextLevelSequences[0],level-1,dkSequences)
+            if len(nextLevelSequences) == 2:
+                b = getKeypadSequenceLength(nextLevelSequences[1],level-1,dkSequences)
+                thisResult = min(thisResult,b)
+
+            result += thisResult
+
+    lengthCache[level][sequence] = result
+    return result
+
+
+def getNumSequenceMinLengths(grid,levels,dkSequences):
+    allKeys = []
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            thisKey = getGrid(grid,x,y)
+            if thisKey != " ":
+                allKeys.append(thisKey)
+    
+    sequenceLengths = {}
+    for fromKey in allKeys:
+        for toKey in allKeys:
+            sequenceKey = f"{fromKey}{toKey}"
+            # pd(f"move: {sequenceKey}")
+            fromX, fromY = findGrid(grid,fromKey)
+            toX, toY = findGrid(grid,toKey)
+            dX = toX - fromX
+            dY = toY - fromY
+
+            if dX == 0:
+                xPress = ""
+            elif dX > 0:
+                xPress = ">" * dX
+            else:
+                xPress = "<" * -dX
+
+            if dY == 0:
+                yPress = ""
+            elif dY > 0:
+                yPress = "v" * dY
+            else:
+                yPress = "^" * -dY
+
+
+            thisSequence = {
+                xPress + yPress,
+                yPress + xPress
+            }
+            
+            minLength = None
+            for sequence in thisSequence:
+                # pd(f"sequence: {sequence}")
+                testX = fromX
+                testY = fromY
+                valid = True
+                for dir in sequence:
+                    # pd(f"dir: {dir}")
+                    testX,testY = nextPosition(testX,testY,dir)
+                    # pd(f"x,y: {testX},{testY}")
+                    char = getGrid(grid,testX,testY)
+                    # pd(f"{char}")
+                    if char not in allKeys:
+                        valid = False
+                        break
+
+                if valid:
+                    thisLength = getKeypadSequenceLength(sequence+"A",levels,dkSequences)
+                    if minLength == None or thisLength < minLength:
+                        minLength = thisLength
+
+            
+            sequenceLengths[sequenceKey] = minLength
+    
+    return sequenceLengths
+
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+pd(data)
+
+numericKeypadGrid = [
+    "789",
+    "456",
+    "123",
+    " 0A"
+]
+
+directionalKeypadGrid = [
+    " ^A",
+    "<v>"
+]
+
+dkSequences = getAllSequences(directionalKeypadGrid)
+pd(dkSequences)
+
+
+
+# nkBaseMap = {
+#     "<^": "<^A",
+#     "^<": "^<A",
+#     ">^": ">^A",
+#     "^>": "^>A",
+#     "<v": "<vA",
+#     "v<": "v<A",
+#     ">v": ">vA",
+#     "v>": "v>A",
+#     "<": "<A",
+#     ">": ">A",
+#     "^": "^A",
+#     "v": "vA",
+#     "": "A",
+# }
+
+# midKeypadCount = 1
+
+# baseMaps = [nkBaseMap]
+# currentBaseMap = nkBaseMap
+# for i in range(midKeypadCount):
+#     pd(i,timePrefix=True)
+#     currentBaseMap = mapToParent(currentBaseMap,dkSequences)
+#     baseMaps.append(currentBaseMap)
+
+
+# for i in range(len(baseMaps)):
+#     pd(f'({i},{len(baseMaps[i][">v"])})')
+#     pd(f'{baseMaps[i][">v"]}')
+
+# for i in range(len(baseMaps)):
+#     # pd(f'({i},{len(baseMaps[i][">v"])})')
+#     pd(f'{baseMaps[i]["^<"]}')
+
+
+
+
+# nkLengths = getSequenceLengthsWithBase(numericKeypadGrid,currentBaseMap)
+
+# pd(nkLengths)
+midKeypadCount = 25
+nkLengths = getNumSequenceMinLengths(numericKeypadGrid,midKeypadCount,dkSequences)
+pd(nkLengths)
+
+sum = 0
+for key in data.keys():
+    moveSequence = "A" + data[key]
+    length = 0
+    for i in range(len(moveSequence)-1):
+        thisKey = moveSequence[i]+moveSequence[i+1]
+        length += nkLengths[thisKey]
+
+    complexity = length * int(key[:-1])
+    pd(f"{data[key]}: {length} - {complexity}")
+    sum += complexity
+
+p(sum)
+

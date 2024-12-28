@@ -100,7 +100,6 @@ def findBlankLine(lines):
     for i in range(len(lines)):
         if (lines[i].strip() == ""):
             return i
-    return -1
 
 def keyInit(dict,key,initialValue):
     if (key not in dict):
@@ -159,8 +158,69 @@ def nextPosition(x,y,d):
     return nX,nY
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = []
+    for line in input:
+        data.append(line.split("-"))
     return data
+
+def addConnection(computers,a,b):
+    keyInit(computers,a,{"connections": []})
+    computers[a]["connections"].append(b)
+
+def getThrees(computers,start):
+    result = set()
+    for a in computers[start]["connections"]:
+        for b in computers[start]["connections"]:
+            if a == b:
+                continue
+            if b in computers[a]["connections"]:
+                result.add(','.join(sorted([start,a,b])))
+    return result
+
+def getParty(computers,thisComputer,alreadyFoundComputers = None):
+    if alreadyFoundComputers:
+        foundComputers = alreadyFoundComputers
+    else:
+        foundComputers = set()
+
+    if thisComputer not in foundComputers:
+        foundComputers.add(thisComputer)
+        for nextComputer in computers[thisComputer]["connections"]:
+            foundComputers.update(getParty(computers,nextComputer,foundComputers))
+
+    return foundComputers
+
+def isParty(computers,fullSet):
+    party = True
+    for a in fullSet:
+        if not party:
+            break
+        for b in fullSet:
+            # pd(f"{a} - {b}")
+            if a != b and b not in computers[a]["connections"]:
+                # pd("False")
+                party = False
+                break
+
+    return party
+
+
+def getLargeParty(computers,thisComputer,maxSoFar=0):
+    max = maxSoFar
+    for checkCount in reversed(range(maxSoFar,len(computers[thisComputer]["connections"]))):
+        if checkCount+1 < max:
+            break
+        for party in list(itertools.combinations(computers[thisComputer]["connections"],checkCount)):
+            fullSet = set()
+            fullSet.update(party)
+            fullSet.add(thisComputer)
+            if isParty(computers,fullSet):
+                max = len(fullSet)
+                pd(",".join(sorted(list(fullSet))))
+    return max
+
+
+
 
 debug = True
 
@@ -170,6 +230,23 @@ sourceInput = getInput()
 # p(data)
 
 data = parseInput(sourceInput)
-pd(data)
+# pd(data)
 
-p(1)
+computers = {}
+for connection in data:
+    addConnection(computers,connection[0],connection[1])
+    addConnection(computers,connection[1],connection[0])
+
+# pd(computers)
+
+# partyList = set()
+
+maxParty = 0
+for start in computers.keys():
+    maxParty = max(maxParty,getLargeParty(computers,start,maxParty))
+
+
+
+# pd(sorted(list(threes)))
+
+# p(len(threes))

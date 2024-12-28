@@ -100,7 +100,6 @@ def findBlankLine(lines):
     for i in range(len(lines)):
         if (lines[i].strip() == ""):
             return i
-    return -1
 
 def keyInit(dict,key,initialValue):
     if (key not in dict):
@@ -159,8 +158,24 @@ def nextPosition(x,y,d):
     return nX,nY
 
 def parseInput(input):
-    data = arrayOfIntFromCSV(input[0])
+    data = []
+    for line in input:
+        data.append(line.split("-"))
     return data
+
+def addConnection(computers,a,b):
+    keyInit(computers,a,{"connections": []})
+    computers[a]["connections"].append(b)
+
+def getThrees(computers,start):
+    result = set()
+    for a in computers[start]["connections"]:
+        for b in computers[start]["connections"]:
+            if a == b:
+                continue
+            if b in computers[a]["connections"]:
+                result.add(','.join(sorted([start,a,b])))
+    return result
 
 debug = True
 
@@ -172,4 +187,17 @@ sourceInput = getInput()
 data = parseInput(sourceInput)
 pd(data)
 
-p(1)
+computers = {}
+for connection in data:
+    addConnection(computers,connection[0],connection[1])
+    addConnection(computers,connection[1],connection[0])
+
+# pd(computers)
+threes = set()
+for start in computers.keys():
+    if start.startswith('t'):
+        threes.update(getThrees(computers,start))
+
+pd(sorted(list(threes)))
+
+p(len(threes))
