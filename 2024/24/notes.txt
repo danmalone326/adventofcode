@@ -1,0 +1,3 @@
+This took a while.
+Went down many wrong paths but ended up just displaying information that helped me eyeball it.
+Could probably automate it now that I know it better.

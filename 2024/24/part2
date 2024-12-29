@@ -171,6 +171,13 @@ def parseInput(input):
 
     return data
 
+def pdLogic(data):
+    for key in sorted(data):
+        if isinstance(data[key], int):
+            pd(f"{data[key]} -> {key}")
+        else: 
+            pd(" ".join(data[key] + ["->",key]))
+
 def getValue(data,key):
     result = None
     if key in data:
@@ -201,7 +208,11 @@ def getNumber(data,char):
     for key in reversed(sorted(filterKeys(data,char))):
         value = getValue(data,key)
         # pd(f"value: {value}")
-        result = (result << 1) + value
+        if value != None:
+            result = (result << 1) + value
+        else: 
+            result = None
+            break
         # pd(f"result: {result}")
     return result
 
@@ -209,32 +220,53 @@ def bitKey(char,bit):
     return f"{char}{bit:>02d}"
 
 def checkBit(data,bit):
+    pd(f"bit: {bit}")
     xKey = bitKey("x",bit)
     yKey = bitKey("y",bit)
     zKey = bitKey("z",bit)
+    xPrevKey = bitKey("x",bit-1)
+    yPrevKey = bitKey("y",bit-1)
     working = True
     for xBit in range(2):
-        if not working:
-            break
         for yBit in range(2):
-            data[xKey] = xBit
-            data[yKey] = yBit
-            zValue = getValue(data,zKey)
-            # pd(f"xKey: {xKey}  yKey: {yKey}  zKey: {zKey}")
-            # pd(f"x: {xBit}  y: {yBit}  z: {zValue}  cmp: {zValue == xBit & yBit}")
-            working = zValue == xBit & yBit
+            for xPrevBit in range(2):
+                for yPrevBit in range(2):
+
+                    data[xKey] = xBit
+                    data[yKey] = yBit
+                    if bit > 0:
+                        data[xPrevKey] = xPrevBit
+                        data[yPrevKey] = yPrevBit                        
+
+                    zValue = getValue(data,zKey)
+                    expected = (xBit ^ yBit) ^ (xPrevBit & yPrevBit)
+                    pd(f"xKey: {xKey}  yKey: {yKey}  xPrevKey: {xPrevKey}  yPrevKey: {yPrevKey}  zKey: {zKey}")
+                    pd(f"x: {xBit}  y: {yBit} xP: {xPrevBit}  yP: {yPrevBit}  z: {zValue}  cmp: {expected}")
+                    working = zValue == expected
+                    if not working: 
+                        break
+                if not working:
+                    break
             if not working: 
                 break
+        if not working:
+            break
 
     return working
             
-def checkAllBits(originalData):
-    numBits = len(filterKeys(originalData,"z"))
+def checkAllBits(data):
+    numBits = len(filterKeys(data,"z"))
+
+    tempData = copy.deepcopy(data)
+    for bit in range(numBits):
+        xKey = bitKey("x",bit)
+        yKey = bitKey("y",bit)
+        tempData[xKey] = 0
+        tempData[yKey] = 0
 
     unmatchedBits = []
-    data = copy.deepcopy(originalData)
     for i in range(numBits):
-        if not checkBit(data,i):
+        if not checkBit(tempData,i):
             unmatchedBits.append(i)
 
     return unmatchedBits
@@ -252,27 +284,28 @@ def getDependencies(data,key):
         
     return thisSet
 
+def getParentDependencies(data,key,loopDetectList = set()):
+    thisSet = set()
+    # pd(f"checking: {key}")
+    if isinstance(data[key], int):
+        pass
+    elif key in loopDetectList:
+        raise ValueError("Loop detected")
+    else:
+        thisSet.update({key})
+        formula = data[key]
+        thisSet.update(getParentDependencies(data,formula[0],thisSet))
+        thisSet.update(getParentDependencies(data,formula[2],thisSet))
+        
+    return thisSet
+
+def getAllParentDependencies(data):
+    result = {}
+    for key in data:
+        result[key] = getParentDependencies(data,key)
+    return result
+
 def getBrokenBitDependencyCount(data):
-    x = getNumber(data,"x")
-    y = getNumber(data,"y")
-    z = getNumber(data,"z")
-    # p(f"z: {z}")
-
-    target = x & y
-
-    xBits = math.floor(math.log2(x))+1
-    yBits = math.floor(math.log2(y))+1
-    zBits = math.floor(math.log2(z))+1
-    targetBits = math.floor(math.log2(target))+1
-    bits = max(xBits,yBits,zBits,targetBits)
-
-    # pd(f"     x: {x:>0{bits}b}")
-    # pd(f"     y: {y:>0{bits}b}")
-    # pd(f"     z: {z:>0{bits}b}")
-    # pd(f"target: {target:>0{bits}b}")
-
-    # pd(f"{z==target}")
-    
     brokenBits = checkAllBits(originalData)
     # pd(brokenBits)
 
@@ -285,14 +318,7 @@ def getBrokenBitDependencyCount(data):
         thisSet = getDependencies(originalData,thisKey)
         brokenBitDependencyCount[thisKey] = len(thisSet)
         dependencyList.update(thisSet)
-        # pd(len(thisSet))
-        # pd(thisSet)
-        # for key in thisSet:
-        #     keyInit(brokenBitDependencyCount,key,0)
-        #     brokenBitDependencyCount[key] += 1
 
-    # for key in sorted(brokenBitDependencyCount.keys(), key=lambda x: brokenBitDependencyCount[x]):
-    #     pd(f"{key}: {brokenBitDependencyCount[key]}")
     pd(f"broken dep count: {len(brokenBitDependencyCount)}")
 
     return brokenBitDependencyCount, dependencyList
@@ -326,6 +352,136 @@ def hasLoop(data,key=None,seenSet = None, level=0):
 
     return result
 
+def keyListToCsv(keyList):
+    return ','.join(sorted(keyList))
+
+
+def getMismatches(data):
+    mismatches = []
+    for key in data:
+        good = True
+        if isinstance(data[key], int):
+            continue
+
+        a,op,b = data[key]
+        if isinstance(data[a], int):
+            aop = "INT"
+        else:
+            aop = data[a][1]
+
+        if isinstance(data[b], int):
+            bop = "INT"
+        else:
+            bop = data[b][1]
+        
+
+        if op == "OR":
+            if aop != "AND" or bop != "AND":
+                good = False
+
+        elif op == "AND" or op == "XOR":
+            if aop == "INT" and bop == "INT":
+                pass
+            elif aop == "XOR" and bop == "OR":
+                pass
+            elif bop == "XOR" and aop == "OR":
+                pass
+            else:
+                good = False
+
+
+        if not good:
+            mismatches.append(key)
+
+    return mismatches
+
+def swapKeys(data,keyPairList):
+    for keyPair in keyPairList:
+
+        temp = data[keyPair[0]]
+        data[keyPair[0]] = data[keyPair[1]]
+        data[keyPair[1]] = temp
+
+#################
+
+
+showKeys = False
+hideKnownCarryBits = True
+
+def sortedLogicStr(formula):
+    a = formula[0]
+    b = formula[2]
+    if a>b:
+        b = formula[0]
+        a = formula[2]
+    
+    return f"( {a} {formula[1]} {b} )"
+
+def logicStr(data,key):
+    result = None
+    if isinstance(data[key], int):
+        result = key
+    elif hideKnownCarryBits and key in [myCarryBitMap[a] for a in myCarryBitMap]:
+        bit = [a for a in myCarryBitMap if myCarryBitMap[a] == key][0]
+        result = f"( CARRY IN {bit} )"
+        if showKeys:
+            result = result[:-1] + f"[{key}])"
+    else:
+        formula = data[key]
+        result = sortedLogicStr([logicStr(data,formula[0]),formula[1],logicStr(data,formula[2])]) 
+        if showKeys:
+            result = result[:-1] + f"[{key}])"
+
+    return result
+
+def xBitStr(bit):
+    return bitKey("x",bit)
+
+def yBitStr(bit):
+    return bitKey("y",bit)
+
+def andStr(a,b):
+    return sortedLogicStr([a,"AND",b])
+
+def orStr(a,b):
+    return sortedLogicStr([a,"OR",b])
+
+def xorStr(a,b):
+    return sortedLogicStr([a,"XOR",b])
+
+def carryBitStr(bit):
+    if hideKnownCarryBits:
+        result = f"( CARRY IN {bit} )"
+    else:
+        result = andStr(xBitStr(bit),yBitStr(bit))
+        if bit > 0:
+            result = orStr(result,andStr(xorStr(xBitStr(bit),yBitStr(bit)),carryBitStr(bit-1)))
+    return result
+
+def sumBitStr(bit):
+    result = xorStr(xBitStr(bit),yBitStr(bit))
+    if bit > 0:
+        result = xorStr(carryBitStr(bit-1),result)
+    return result
+
+def findKey(data,a,op,b,failNote=None):
+    result = None
+    for key in data:
+        if isinstance(data[key], int):
+            continue
+        formula = data[key]
+        if op == formula[1] and ((a == formula[0] and b == formula[2]) or (b == formula[0] and a == formula[2])):
+            result = key
+            break
+    if result == None:
+        pd(f"Could not find: {a} {op} {b}",newLine=False)
+        if failNote != None:
+            pd(f" - {failNote}")
+        else:
+            pd("")
+    return result
+
+
 debug = True
 
 sourceInput = getInput()
@@ -336,32 +492,253 @@ sourceInput = getInput()
 originalData = parseInput(sourceInput)
 # pd(data)
 pd(getNumber(originalData,"z"))
+pd("===")
 
+data = originalData
+
+
+swapPairs = [
+    ["z12","fgc"],
+    ["z29","mtj"],
+    ["vvm","dgr"],
+    ["z37","dtv"]
+]
+
+swapKeys(data,swapPairs)
+
+myCarryBitMap = {
+    0: "njb",
+    1: "hfp"
+}
+
+knownKeys = {}
+
+for bit in range(43):
+
+    this = {}
+    xor1 = findKey(data,bitKey("x",bit),"XOR",bitKey("y",bit),f" - bit {bit} XOR1 mapping.")
+    this["XOR1"] = xor1
+
+    and1 = findKey(data,bitKey("x",bit),"AND",bitKey("y",bit),f" - bit {bit} AND1 mapping.")
+    this["AND1"] = and1
+
+    if bit == 0:
+        this["SUM"] = this["XOR1"]
+        this["CARRY"] = this["AND1"]
+    else:
+        previousCarry = knownKeys[bit-1]["CARRY"]
+
+        xor2 = findKey(data,this["XOR1"],"XOR",previousCarry,f" - bit {bit} XOR2 mapping.")
+        this["XOR2"] = xor2
+
+        and2 = findKey(data,this["XOR1"],"AND",previousCarry,f" - bit {bit} AND2 mapping.")
+        this["AND2"] = and2
+
+        if xor2 == None and and2 == None:
+            possibleSum = data[bitKey('z',bit)]
+            pd(f"Possible XOR2: {sortedLogicStr(possibleSum)}")
+            break
+
+        or1 = findKey(data,this["AND1"],"OR",this["AND2"],f" - bit {bit} OR1 mapping.")
+        this["OR1"] = or1
+
+        if or1 == None:
+            pd(f"AND1: {and1}  AND2: {and2}  XOR2: {xor2}")
+
+
+        this["SUM"] = xor2
+        this["CARRY"] = or1
+
+    knownKeys[bit] = this
+
+    key = bitKey("z",bit)
+    # pd(logicStr(data,key))
+    # pd(sumBitStr(bit))
+    # pd("-")
+
+pd(swapPairs)
+swappedList = []
+for a in swapPairs:
+    swappedList.extend(a)
+
+pd(swappedList)
+pd(keyListToCsv(swappedList))
+
+# pd(knownKeys)
+
+# startKey = 0
+
+
+# for i in range(43):
+#     key = bitKey("z",i)
+#     pd(f"{key}: ", newLine=False)
+#     found = key
+#     expected = knownKeys[i]["SUM"]
+#     if found == expected:
+#         pd("same")
+#     else:
+#         pd("different")
+#     pd(found)
+#     pd(expected)
+
+#     if found != expected:
+#         pd(knownKeys[i])
+#         break
+
+
+# for i in range(43):
+#     key = bitKey("z",i)
+#     pd(f"{key}: ", newLine=False)
+#     found = logicStr(data,key)
+#     expected = sumBitStr(i)
+#     if found == expected:
+#         pd("same")
+#     else:
+#         pd("different")
+#     pd(found)
+#     pd(expected)
+
+#     if found != expected:
+#         break
+
+
+# cb = checkAllBits(data)
+# pd(len(cb))
+
+# sys.exit(0)
+
+# mismatches = getMismatches(data)
+# pd(mismatches)
+
+# possibleSwitchCount = {}
+# for key in mismatches:
+#     keyInit(possibleSwitchCount,data[key][0],0)
+#     possibleSwitchCount[data[key][0]] += 1
+#     keyInit(possibleSwitchCount,data[key][2],0)
+#     possibleSwitchCount[data[key][2]] += 1
+
+# pd(possibleSwitchCount)
+
+
+# checkedAlready = set()
+# count = 0
+# tryCount = 0
+# minLen = 999
+# level1List = possibleSwitchCount.keys()
+# for pair1 in itertools.combinations(level1List,2):
+#     level2List = list(set(level1List) - set(pair1))
+#     for pair2 in itertools.combinations(level2List,2):
+#         level3List = list(set(level2List) - set(pair2))
+#         for pair3 in itertools.combinations(level3List,2):
+#             level4List = list(set(level3List) - set(pair3))
+#             for pair4 in itertools.combinations(level4List,2):
+#                 tryStr = keyListToCsv([keyListToCsv(pair1),keyListToCsv(pair2),keyListToCsv(pair3),keyListToCsv(pair4)])
+#                 count += 1
+#                 if count%10000 == 0:
+#                     pd(f"Loops: {count}",timePrefix=True)
+#                 if tryStr in checkedAlready:
+#                     continue
+
+#                 tryCount += 1
+#                 if tryCount%10000 == 0:
+#                     pd(f"Trys: {tryCount}",timePrefix=True)
+
+#                 checkedAlready.add(tryStr)
+
+#                 testData = copy.deepcopy(originalData)
+#                 swapKeys(testData,[pair1,pair2,pair3,pair4])
+#                 tempMismatches = getMismatches(data)
+#                 if len(tempMismatches) < minLen:
+#                     pd(f"Found: len: {len(tempMismatches)} - {tryStr}")
+#                     minLen = len(tempMismatches)
+
+# pd(len(checkedAlready))
+# pd(minLen)
+
+
+
+# key2 = bitKey("z",startKey+1)
+# pd(logicStr(data,key2))
+
+# key3 = bitKey("z",startKey+2)
+# pd(logicStr(data,key3))
 
 # zeroData = copy.deepcopy(originalData)
 # for i in range(len(filterKeys(zeroData,"x"))):
 #     zeroData[bitKey("x",i)] = 0
 #     zeroData[bitKey("y",i)] = 0
 
-data = copy.deepcopy(originalData)
-brokenBitDependencyCount, dependencyList = getBrokenBitDependencyCount(data)
+# data = copy.deepcopy(originalData)
 
-for key in sorted(brokenBitDependencyCount.keys(), key=lambda x: brokenBitDependencyCount[x]):
-    pd(f"{key}: {brokenBitDependencyCount[key]}")
+# parentDependencies = getAllParentDependencies(data)
+# brokenBits = checkAllBits(data)
+# pd(f"broken bits: {len(brokenBits)}")
 
-swapKey1 = sorted(brokenBitDependencyCount.keys(), key=lambda x: brokenBitDependencyCount[x])[0]
-for swapKey2 in dependencyList:
-    if swapKey2 == swapKey1:
-        continue
+# for key in sorted([k for k in data if k.startswith("z")]):
+#     pd(f"{key}: {len(parentDependencies[key])}  {int(key[1:]) in brokenBits}")
 
-    data = copy.deepcopy(originalData)
-    swapFormula1 = data[swapKey1]
-    swapFormula2 = data[swapKey2]
-    data[swapKey1] = swapFormula2
-    data[swapKey2] = swapFormula1
-    thisHasLoop = hasLoop(data)
-    if thisHasLoop:
-        pd("found loop")
-    else:
-        pd(f'good swap {swapKey1} and {swapKey2}')
-        brokenBits, dl2 = getBrokenBitDependencyCount(data)
+# potentialSwaps = set()
+# for i in brokenBits:
+#     key = bitKey("z",i)
+#     potentialSwaps.add(key)
+#     potentialSwaps.update(parentDependencies[key])
+
+# pd(len(potentialSwaps))
+
+# swapKey1 = sorted([bitKey("z",i) for i in brokenBits],key=lambda x: len(parentDependencies[x]))[0]
+
+# for swapKey2 in potentialSwaps:
+#     pd(f"{swapKey1} - {swapKey2} = ",newLine=False)
+#     if swapKey2 == swapKey1:
+#         pd("same")
+#         continue
+
+#     if swapKey1 in parentDependencies[swapKey2] or swapKey2 in parentDependencies[swapKey1]:
+#         pd('loop detected')
+#         continue
+
+#     # pdLogic(data)
+#     # pd("---")
+#     tempData = copy.deepcopy(data)
+#     # do the swap
+#     tempFormula = tempData[swapKey1]
+#     tempData[swapKey1] = tempData[swapKey2]
+#     tempData[swapKey2] = tempFormula
+
+#     # pdLogic(data)
+#     try:
+#         newBrokenBits = checkAllBits(tempData)
+#         pd(f"new broken bits: {len(newBrokenBits)}")
+#     except RecursionError as e:
+#         pd(e.args[0])
+
+#     break
+
+
+# pd(swapKey1)
+# pd("njb" in potentialSwaps)
+# pd("x00" in parentDependencies[swapKey1])
+# pd("rrd" in parentDependencies["z33"])
+
+
+# brokenBitDependencyCount, dependencyList = getBrokenBitDependencyCount(data)
+
+# for key in sorted(brokenBitDependencyCount.keys(), key=lambda x: brokenBitDependencyCount[x]):
+#     pd(f"{key}: {brokenBitDependencyCount[key]}")
+
+# swapKey1 = sorted(brokenBitDependencyCount.keys(), key=lambda x: brokenBitDependencyCount[x])[0]
+# for swapKey2 in dependencyList:
+#     if swapKey2 == swapKey1:
+#         continue
+
+#     data = copy.deepcopy(originalData)
+#     swapFormula1 = data[swapKey1]
+#     swapFormula2 = data[swapKey2]
+#     data[swapKey1] = swapFormula2
+#     data[swapKey2] = swapFormula1
+#     thisHasLoop = hasLoop(data)
+#     if thisHasLoop:
+#         pd("found loop")
+#     else:
+#         pd(f'good swap {swapKey1} and {swapKey2}')
+#         brokenBits, dl2 = getBrokenBitDependencyCount(data)
