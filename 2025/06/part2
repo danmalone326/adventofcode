@@ -1,0 +1,228 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+
+debug=True
+
+def p(obj,timePrefix = False, newLine = True):
+    if newLine:
+        end = "\n"
+    else:
+        end = ""
+
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [set,frozenset]:
+        printableObj = list(obj)
+    else:
+        printableObj = obj
+
+    if type(printableObj) in [str,int]:
+        print(printableObj,end=end)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(printableObj, indent=2),end=end)
+
+def pd(obj,timePrefix = False,newLine = True):
+    if debug:
+        p(obj,timePrefix=timePrefix,newLine=newLine)
+
+def pdCharGrid(grid):
+    if debug:
+        for y in range(len(grid)):
+            pd(''.join(grid[y]))
+
+def wait():
+    if debug:
+        input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfSpaceSeparatedDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.split(" "))])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+    return -1
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def initGrid(xSize,ySize,obj):
+    grid = []
+    for y in range(ySize):
+        row = []
+        for x in range(xSize):
+            row.append(copy.deepcopy(obj))
+        grid.append(row)
+    return grid
+
+def getGrid(grid,x,y,outOfBoundsObj=None):
+    result = None
+    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
+        result = outOfBoundsObj
+    else:
+        result = grid[y][x]
+    return result
+
+def setGrid(grid,x,y,obj):
+    grid[y][x] = obj
+
+def findGrid(grid,obj):
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if getGrid(grid,x,y) == obj:
+                return x,y
+
+def setBit(value,bit):
+    return value | (1<<bit)
+
+def clearBit(value,bit):
+    return value & ~(1<<bit)
+
+def getBit(value,bit):
+    return value & 1 << bit != 0 
+
+dirList = ["^",">","v","<"]
+def nextPosition(x,y,d):
+    nX = x
+    nY = y
+    if d == "^": 
+        nY -= 1
+    elif d == ">":
+        nX += 1
+    elif d == "v":
+        nY += 1
+    elif d == "<":
+        nX -= 1
+    else:
+        raise ValueError
+
+    return nX,nY
+
+def parseInput(input):
+    data = arrayOfIntFromCSV(input[0])
+    return data
+
+def normalizeData(data):
+    maxLen = max([len(row) for row in data])
+    for r in range(len(data)):
+        l = len(data[r])
+        if l < maxLen:
+            data[r] += " "*(maxLen-l)
+
+def findNextBlankColumn(data,startPos):
+    found = False
+    nextPos = None
+    for pos in range(startPos,len(data[0])):
+        found = True
+        for row in range(len(data)):
+            if data[row][pos] != " ":
+                found = False
+                break
+
+        
+        if found:
+            nextPos = pos
+            break
+    
+    if not found:
+        nextPos = len(data[0])
+
+    return nextPos
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = sourceInput
+pd(data)
+normalizeData(data)
+pd(data)
+
+sum = 0
+startPos = 0
+while startPos < len(data[0]):
+    endPos = findNextBlankColumn(data,startPos)
+    pd(f"endPos: {endPos}")
+
+    operator = data[-1][startPos:endPos].strip()
+    pd(operator)
+    if operator == "*" or operator == "+":
+        evalStr = ""
+        for column in reversed(range(startPos,endPos)):
+            for row in range(0,len(data)-1):
+                evalStr += data[row][column]
+            if column > startPos:
+                evalStr += operator
+
+        pd(evalStr)
+        result = eval(evalStr)
+        pd(result)
+        
+        sum += result
+
+    startPos = endPos + 1
+
+p(sum)
