@@ -1,0 +1,215 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+
+debug=True
+
+def p(obj,timePrefix = False, newLine = True):
+    if newLine:
+        end = "\n"
+    else:
+        end = ""
+
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [set,frozenset]:
+        printableObj = list(obj)
+    else:
+        printableObj = obj
+
+    if type(printableObj) in [str,int]:
+        print(printableObj,end=end)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(printableObj, indent=2),end=end)
+
+def pd(obj,timePrefix = False,newLine = True):
+    if debug:
+        p(obj,timePrefix=timePrefix,newLine=newLine)
+
+def pdCharGrid(grid):
+    if debug:
+        for y in range(len(grid)):
+            pd(''.join(grid[y]))
+
+def wait():
+    if debug:
+        input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfSpaceSeparatedDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.split(" "))])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+    return -1
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def initGrid(xSize,ySize,obj):
+    grid = []
+    for y in range(ySize):
+        row = []
+        for x in range(xSize):
+            row.append(copy.deepcopy(obj))
+        grid.append(row)
+    return grid
+
+def getGrid(grid,x,y,outOfBoundsObj=None):
+    result = None
+    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
+        result = outOfBoundsObj
+    else:
+        result = grid[y][x]
+    return result
+
+def setGrid(grid,x,y,obj):
+    grid[y][x] = obj
+
+def findGrid(grid,obj):
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if getGrid(grid,x,y) == obj:
+                return x,y
+
+def setBit(value,bit):
+    return value | (1<<bit)
+
+def clearBit(value,bit):
+    return value & ~(1<<bit)
+
+def getBit(value,bit):
+    return value & 1 << bit != 0 
+
+dirList = ["^",">","v","<"]
+def nextPosition(x,y,d):
+    nX = x
+    nY = y
+    if d == "^": 
+        nY -= 1
+    elif d == ">":
+        nX += 1
+    elif d == "v":
+        nY += 1
+    elif d == "<":
+        nX -= 1
+    else:
+        raise ValueError
+
+    return nX,nY
+
+def parseInput(input):
+    data = [(i.split("-")) for i in input[0].split(",")]
+    return data
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput)
+pd(data)
+
+# first pass
+data2 = []
+for i in data:
+    xStr = i[0]
+    yStr = i[1]
+    lX = len(xStr)
+    lY = len(yStr)
+    if lX == lY:
+        data2.append((xStr,yStr))
+    elif (lX != lY):
+        data2.append((xStr,str(int(math.pow(10,lX))-1)))
+        data2.append((str(int(math.pow(10,lX))),yStr))
+        
+pd(data2)
+
+
+sum = 0
+for i in data2:
+    xStr = i[0]
+    yStr = i[1]
+    lX = len(xStr)
+    lY = len(yStr)
+    if lX%2 == 1:
+        print("skip")
+    else:
+        x = int(xStr)
+        y = int(yStr)
+        lS = lX//2
+        aX = int(xStr[:lS])
+        aY = int(yStr[:lS])
+        for a in range(aX,aY+1):
+            print(a)
+            b = int(f"{a}{a}")
+            if x <= b <= y:
+                print(f"yes {b}")
+                sum += b
+            else:
+                print(f"no {b}")
+
+
+p(sum)
