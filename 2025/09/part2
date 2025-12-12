@@ -1,0 +1,370 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+
+debug=True
+
+def p(obj,timePrefix = False, newLine = True):
+    if newLine:
+        end = "\n"
+    else:
+        end = ""
+
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [set,frozenset]:
+        printableObj = list(obj)
+    else:
+        printableObj = obj
+
+    if type(printableObj) in [str,int]:
+        print(printableObj,end=end)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(printableObj, indent=2),end=end)
+
+def pd(obj,timePrefix = False,newLine = True):
+    if debug:
+        p(obj,timePrefix=timePrefix,newLine=newLine)
+
+def pdCharGrid(grid):
+    if debug:
+        for y in range(len(grid)):
+            pd(''.join(grid[y]))
+
+def wait():
+    if debug:
+        input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfSpaceSeparatedDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.split(" "))])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+    return -1
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def initGrid(xSize,ySize,obj):
+    grid = []
+    for y in range(ySize):
+        row = []
+        for x in range(xSize):
+            row.append(copy.deepcopy(obj))
+        grid.append(row)
+    return grid
+
+def getGrid(grid,x,y,outOfBoundsObj=None):
+    result = None
+    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
+        result = outOfBoundsObj
+    else:
+        result = grid[y][x]
+    return result
+
+def setGrid(grid,x,y,obj):
+    grid[y][x] = obj
+
+def findGrid(grid,obj):
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if getGrid(grid,x,y) == obj:
+                return x,y
+
+def setBit(value,bit):
+    return value | (1<<bit)
+
+def clearBit(value,bit):
+    return value & ~(1<<bit)
+
+def getBit(value,bit):
+    return value & 1 << bit != 0 
+
+dirList = ["^",">","v","<"]
+def nextPosition(x,y,d):
+    nX = x
+    nY = y
+    if d == "^": 
+        nY -= 1
+    elif d == ">":
+        nX += 1
+    elif d == "v":
+        nY += 1
+    elif d == "<":
+        nX -= 1
+    else:
+        raise ValueError
+
+    return nX,nY
+
+def parseInput(input):
+    data = [arrayOfIntFromCSV(row) for row in input]
+    return data
+
+endpointsKey = 'endpoints'
+isVertical = 'isVertical'
+isUTurn = 'isUTurn'
+
+def newEdge(p1,p2):
+    newEdge = {
+        endpointsKey: (p1,p2),
+        isVertical: True if p1[0] == p2[0] else False,
+        isUTurn: False
+    }
+    return newEdge
+
+def setUTurns(edges):
+    l = len(edges)
+    for i in range(l):
+        thisEdge = edges[i]
+        prevEnds = edges[(i-1)%l][endpointsKey]
+        pAX,pAY = prevEnds[0]
+        pBX,pBY = prevEnds[1]
+        nextEnds = edges[(i+1)%l][endpointsKey]
+        nAX,nAY = nextEnds[0]
+        nBX,nBY = nextEnds[1]
+        if thisEdge[isVertical] and (max(pAX,pBX) == max(nAX,nBX) or min(pAX,pBX) == min(nAX,nBX)):
+            thisEdge[isUTurn] = True
+        elif not thisEdge[isVertical] and (max(pAY,pBY) == max(nAY,nBY) or min(pAY,pBY) == min(nAY,nBY)):
+            thisEdge[isUTurn] = True
+
+
+def isPointOnEdge(p,e):
+    result = False
+    ePA = e[endpointsKey][0]
+    ePB = e[endpointsKey][1]
+    if (e[isVertical]) and (p[0] == ePA[0]) and (min(ePA[1],ePB[1]) <= p[1] <= max(ePA[1],ePB[1])):
+        result = True
+    elif (not e[isVertical]) and (p[1] == ePA[1]) and (min(ePA[0],ePB[0]) <= p[0] <= max(ePA[0],ePB[0])):
+        result = True
+    return result
+
+# if you cross over an odd number of edges, then you started on the inside.
+# def isPointInside(p,edges):
+#     result = False
+#     edgeSet = set()
+#     for x in reversed(range(p[0]+1)):
+#         if result: 
+#             break
+#         thisPoint = (x,p[1])
+#         for e in range(len(edges)):
+#             thisEdge = edges[e]
+#             if isPointOnEdge(thisPoint,thisEdge):
+#                 #pd(thisEdge)
+#                 if thisEdge[isVertical] or not thisEdge[isUTurn]:
+#                     if x == p[0]: 
+#                         result = True
+#                         break
+#                     edgeSet.add(e)
+#     # pd(count)
+#     if len(edgeSet)%2 == 1:
+#         result = True
+#     return result
+
+def isPointInside(p,edges):
+    result = False
+    edgeSet = set()
+    checkSegment = newEdge([0,p[1]],p)
+    for e in range(len(edges)):
+        thisEdge = edges[e]
+        if isPointOnEdge(p,thisEdge):
+            result = True
+            break
+        if intersect(thisEdge,checkSegment, includeParallel=True):
+            if thisEdge[isVertical] or not thisEdge[isUTurn]:
+                edgeSet.add(e)
+
+    # for x in reversed(range(p[0]+1)):
+    #     if result: 
+    #         break
+    #     thisPoint = (x,p[1])
+    #     for e in range(len(edges)):
+    #         thisEdge = edges[e]
+    #         if isPointOnEdge(thisPoint,thisEdge):
+    #             #pd(thisEdge)
+    #             if thisEdge[isVertical] or not thisEdge[isUTurn]:
+    #                 if x == p[0]: 
+    #                     result = True
+    #                     break
+    #                 edgeSet.add(e)
+    # pd(count)
+    if len(edgeSet)%2 == 1:
+        result = True
+    return result
+
+def intersect(e1, e2, includeParallel = False):
+    result = False
+    if (e1[isVertical] == e2[isVertical]):
+        if includeParallel:
+            a0,a1 = e1[endpointsKey]
+            b0,b1 = e2[endpointsKey]
+            if e1[isVertical] and a0[0] == b0[0]:
+                if not (max(a0[1],a1[1]) < min(b0[1],b1[1]) or max(b0[1],b1[1]) < min(a0[1],a1[1])):
+                    result = True 
+                
+            elif not e1[isVertical] and a0[1] == b0[1]:
+                if not (max(a0[0],a1[0]) < min(b0[0],b1[0]) or max(b0[0],b1[0]) < min(a0[0],a1[0])):
+                    result = True
+
+    else:
+        if e1[isVertical]:
+            v0,v1 = e1[endpointsKey]
+            h0,h1 = e2[endpointsKey]
+        else:
+            v0,v1 = e2[endpointsKey]
+            h0,h1 = e1[endpointsKey]
+
+        # vMax = [v0[0],max(v0[1],v1[1])]
+        # vMin = [v0[0],min(v0[1],v1[1])]
+        # hMax = [max(h0[0],h1[0]),h0[1]]
+        # hMax = [min(h0[0],h1[0]),h0[1]]
+            
+        if (min(h0[0],h1[0]) < v0[0] < max(h0[0],h1[0])) and (min(v0[1],v1[1])) < h0[1] < max(v0[1],v1[1]):
+            result = True
+        
+    return result
+
+def boxIntersect(edges,a,b):
+    maxX = max(a[0],b[0])
+    minX = min(a[0],b[0])
+    maxY = max(a[1],b[1])
+    minY = min(a[1],b[1])
+
+    pA = [minX,minY]
+    pB = [minX,maxY]
+    pC = [maxX,maxY]
+    pD = [maxX,minY]
+
+    eAB = newEdge(pA,pB)
+    eBC = newEdge(pB,pC)
+    eCD = newEdge(pC,pD)
+    eDA = newEdge(pD,pA)
+
+    box = [eAB,eBC,eCD,eDA]
+
+    result = False
+    for e in range(len(edges)):
+        for b in range(len(box)):
+            if intersect(edges[e],box[b]):
+                # pd(f"e: {edges[e]}, b: {box[b]}")
+                result = True
+                break
+        if result:
+            break
+    return result
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+points = parseInput(sourceInput)
+#pd(data)
+
+edges = []
+thisEdge = newEdge(points[-1],points[0])
+edges.append(thisEdge)
+for i in range(len(points)-1):
+    thisEdge = newEdge(points[i],points[i+1])
+    edges.append(thisEdge)
+
+setUTurns(edges)
+
+#pd(edges)
+
+for y in range(9):
+    for x in range(14):
+        # pd('')
+        # pd([x,y])
+        pd("X" if isPointInside((x,y),edges) else '.',newLine=False)
+    pd("")
+
+# result = intersect(newEdge((0,5),(10,5)), newEdge((5,0),(5,10)))
+# pd(result)
+
+# pd(boxIntersect(edges,[1,1],[13,8]))
+# a=1
+# b=4
+# pd(f"a: {a}: {points[a]}, b: {b}: {points[b]}")
+# pd(boxIntersect(edges,points[a],points[b]))
+
+# exit(1)
+
+maxSize = 0
+for a in range(len(points)-1):
+    for b in range(a+1,len(points)):
+        # pd(f"a: {a}: {points[a]}, b: {b}: {points[b]}")
+        dX = abs(points[a][0] - points[b][0]) + 1
+        dY = abs(points[a][1] - points[b][1]) + 1
+        area = dX * dY
+        if area > maxSize and not boxIntersect(edges,points[a],points[b]):
+            # pd("almost")
+            if isPointInside([points[a][0],points[b][1]],edges) and isPointInside([points[b][0],points[a][1]],edges):
+                maxSize = area
+                pd(f"maxSize: {maxSize}")     
+
+
+p(maxSize)
