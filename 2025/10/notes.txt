@@ -1,0 +1,28 @@
+Cache:
+Key = array of joltage count
+Value = array of button presses
+
+get_joltage
+pass in array of needed joltage
+returns min amount of presses to get exactly what's needed (None if not possible)
+
+Found this post with a description of an algorithm:
+https://www.reddit.com/r/adventofcode/comments/1pk87hl/2025_day_10_part_2_bifurcate_your_way_to_victory/
+
+Borrowed someone elses code to compare my output for each line to find the edge cases I was missing:
+I don't really understand this code, but the output helped me see some different paths.
+https://topaz.github.io/paste/#XQAAAQCwBAAAAAAAAAA0m0pnuFI8c82uPD0wiI6r5tRUBue3veHwqPN0GwvyrCHheGr+uJ525ZjvtGrcOj/BaKzUBxfKwtBaXFVUHia/CG49iPaSIjz2eJbShTYT6pFrJKMngfxaVChQCeuV+rZWi1LpBBEtgiKSdtH+Y6K1ZxYEBb3S6BYrkFfTC4uwawqAUDGKP+InQFqS3M69/lX5LplsVNftlT7ANGFjmkQIpT7gZc8UYhSE1qVjPomA/P9miFrQQ7YL9dgT3EqKnH+Z+xAT+Pg/Cuc00Tnw/qGAnXGDcqPCkjs46mv+eDAruyCpxjYDeSqxTfsu9wC29+3ssnEAd+frVQrPvPtC6D4Fkg0GjOMXMTJ6YUtIho3Tzw8aWs6FsCH8Sl1Ly7FskY+X/LsUsOKKyX2LChLgzYosj589TN6RrnqBlNbjzqeKEnHidHyfocliJFr85ujY+J1uU2yQWCXlIWUfcxG2HwDiLYY+rc44b1sNPLRpJ4lll5KqAunwtlRLWCRh83KD38ng0KZht8b5dk/s8cqd+jYWang7k9OAhuVSK8NaYiefyJ7uGxuwlS6Kb0GhfT/E6hDb6mS5ldrPqez7+x63FBZgQRljiAN3Vh7Eym6Z1FfkYtstDk9Z2RboTxptOlh8xc2wBe38x9R0vkQgjqdkAuu1tP5ZJI5E7ie+sHHdeT4E0rkJZ70h25zcOYAx6X0VVqIe9kq9/9fe29g=
+
+
+
+-1-3 - 10
+012- -  7
+0--3 -  9
+0-23 - 13
+
+if a == None:
+    result = b
+elif b == None:
+    result = a
+else:
+    result = min(a,b)

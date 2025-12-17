@@ -1,0 +1,448 @@
+#!/usr/bin/python3
+import sys
+import fileinput
+import json
+import math
+import re
+import copy
+from datetime import datetime
+import itertools
+import collections, functools
+
+debug=True
+
+def p(obj,timePrefix = False, newLine = True):
+    if newLine:
+        end = "\n"
+    else:
+        end = ""
+
+    if timePrefix:
+        now = datetime.now()
+        print('{}: '.format(str(now.time()).split('.')[0]),end="")
+
+    if type(obj) in [set,frozenset]:
+        printableObj = list(obj)
+    else:
+        printableObj = obj
+
+    if type(printableObj) in [str,int]:
+        print(printableObj,end=end)
+    else:
+        if timePrefix:
+            print('')
+        print(json.dumps(printableObj, indent=2),end=end)
+
+def pd(obj,timePrefix = False,newLine = True):
+    if debug:
+        p(obj,timePrefix=timePrefix,newLine=newLine)
+
+def pdCharGrid(grid):
+    if debug:
+        for y in range(len(grid)):
+            pd(''.join(grid[y]))
+
+def wait():
+    if debug:
+        input("Press Enter to continue...")
+
+def getInput():
+    fileRows = []
+    with open(sys.argv[1], 'r') as file:
+        for line in file:
+            fileRows.append(line.rstrip())
+    
+    return fileRows
+
+# pass multiple lines
+# 1 integer per line
+def arrayOfIntFromList(input):
+    rows = [int(c) for c in input]
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.strip())])
+    return rows
+
+# pass multiple lines
+# returns a 2 dimensional array
+def arrayFromGridOfSpaceSeparatedDigits(input):
+    rows = []
+    for line in input:
+        rows.append([int(c) for c in list(line.split(" "))])
+    return rows
+
+# one line in returns an array
+def arrayOfStrFromCSV(line):
+    return list(line.strip().split(','))
+
+# one line in returns an array
+def arrayOfIntFromCSV(line):
+    return [int(i) for i in line.strip().split(',')]
+    
+# one line in returns an array
+def arrayOfWordsFromString(line):
+    return list(line.strip().split())
+
+def readData():
+    rows = []
+    for line in fileinput.input():
+        # rows.append(line.strip())
+        rows.append([int(c) for c in list(line.strip())])
+        # [int(i) for i in line.strip().split(',')]
+
+    return rows
+
+def findBlankLine(lines):
+    for i in range(len(lines)):
+        if (lines[i].strip() == ""):
+            return i
+    return -1
+
+def keyInit(dict,key,initialValue):
+    if (key not in dict):
+        dict[key] = initialValue
+
+def initGrid(xSize,ySize,obj):
+    grid = []
+    for y in range(ySize):
+        row = []
+        for x in range(xSize):
+            row.append(copy.deepcopy(obj))
+        grid.append(row)
+    return grid
+
+def getGrid(grid,x,y,outOfBoundsObj=None):
+    result = None
+    if x<0 or x>=len(grid[0]) or y<0 or y>=len(grid):
+        result = outOfBoundsObj
+    else:
+        result = grid[y][x]
+    return result
+
+def setGrid(grid,x,y,obj):
+    grid[y][x] = obj
+
+def findGrid(grid,obj):
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            if getGrid(grid,x,y) == obj:
+                return x,y
+
+def setBit(value,bit):
+    return value | (1<<bit)
+
+def clearBit(value,bit):
+    return value & ~(1<<bit)
+
+def getBit(value,bit):
+    return value & 1 << bit != 0 
+
+dirList = ["^",">","v","<"]
+def nextPosition(x,y,d):
+    nX = x
+    nY = y
+    if d == "^": 
+        nY -= 1
+    elif d == ">":
+        nX += 1
+    elif d == "v":
+        nY += 1
+    elif d == "<":
+        nX -= 1
+    else:
+        raise ValueError
+
+    return nX,nY
+
+origKey = "orig"
+lightKey = "lights"
+buttonKey = "buttons"
+joltageKey = "joltage"
+def parseInput(input):
+    data = []
+    for m in input:
+        mSplit = m.split(" ")
+        length = len(mSplit[0][1:-1])
+        thisMachine = {origKey: m,
+                       lightKey: int(mSplit[0][1:-1].replace(".","0").replace("#","1")[::-1],2),
+                       joltageKey: tuple(int(x) for x in mSplit[-1][1:-1].split(","))
+                       }
+        buttons = []
+        for button in mSplit[1:-1]:
+            thisButton = 0
+            for bitNum in button[1:-1].split(","):
+                thisButton += 2**int(bitNum)
+            buttons.append(thisButton)
+        thisMachine[buttonKey] = buttons
+        data.append(thisMachine)
+    return data
+
+def all_combinations(list):
+    for r in range(1,len(list)+1):
+        for combo in itertools.combinations(list,r):
+            yield(combo)
+
+def array_sub(a,b):
+    return tuple(x-y for x,y in zip(a,b))
+
+def array_add(a,b):
+    return tuple(x+y for x,y in zip(a,b))
+
+def array_div(a,b):
+    return tuple(x//b for x in a)
+
+def new_cache():
+    return {}
+
+def array_even(j):
+    return all(x%2 == 0 for x in j)
+
+def array_zero(j):
+    return all(x == 0 for x in j)
+
+def is_out_of_bounds(j):
+    return any(x < 0 for x in j)
+
+# def get_joltage(joltages, buttons, cache):
+#     result = None
+#     if joltages in cache:
+#         result = cache[joltages]
+#     else:
+#         if array_zero(joltages):
+#             result = 0
+#         elif is_out_of_bounds(joltages):
+#             result = None
+#         else:
+#             minPresses = None
+#             for bIndex in range(len(buttons)):
+#                 b = buttons[bIndex]
+#                 newJ = array_sub(joltages,b)
+#                 if any(x < 0 for x in newJ):
+#                     continue
+#                 newPresses = get_joltage(newJ, buttons[bIndex:], cache)
+#                 if newPresses != None:
+#                     newPresses += 1
+#                     if minPresses == None or newPresses < minPresses:
+#                         minPresses = newPresses
+#             result = minPresses
+#         cache[joltages] = result
+
+    # pd(f"get_joltage({j}): {result}")
+    # return result
+
+def get_desired_output_pattern(joltages):
+    result = 0
+    for i,x in enumerate(joltages):
+        result += (x%2)*(2**i)
+    return result
+
+def find_shortest_button_combo(desired, buttons):
+    result = ()
+    # pd(thisMachine)
+    # for button in thisMachine[buttonKey]:
+        # pd(f"{button:06b} - {button}")
+    for buttonCombo in all_combinations(buttons):
+        # first found will be shortest because we try short combinations first
+        sum = 0
+        # pd(f"{buttonCombo}")
+        # pd(f"desire: {thisMachine[lightKey]:06b}")
+        # pd(f"result: {result:06b}")
+        for button in buttonCombo:
+            sum ^= button
+            # pd(f"        {button:06b}")
+            # pd(f"result: {result:06b}")
+        if sum == desired:
+            # pd(buttonCombo)
+            result = buttonCombo
+            break
+    
+    return result
+
+def find_all_button_combos(desired, buttons):
+    result = []
+    # pd(thisMachine)
+    # for button in thisMachine[buttonKey]:
+        # pd(f"{button:06b} - {button}")
+    for buttonCombo in all_combinations(buttons):
+        # first found will be shortest because we try short combinations first
+        sum = 0
+        # pd(f"{buttonCombo}")
+        # pd(f"desire: {thisMachine[lightKey]:06b}")
+        # pd(f"result: {result:06b}")
+        for button in buttonCombo:
+            sum ^= button
+            # pd(f"        {button:06b}")
+            # pd(f"result: {result:06b}")
+        if sum == desired:
+            # pd(buttonCombo)
+            result.append(buttonCombo)
+    
+    return result
+
+def joltage_sub(joltages,buttons):
+    result = []
+    for i in range(len(joltages)):
+        thisJoltage = joltages[i]
+        for b in range(len(buttons)):
+             if (2**i) & (buttons[b]) > 0:
+                thisJoltage -= 1
+
+        result.append(thisJoltage)
+
+    return tuple(result)
+
+def get_joltages(joltages, availableButtons, cache, evenPass=False):
+    # pd(f"get_joltages: {joltages}")
+
+    minResult = None
+    minButtons = None
+
+    if joltages in cache:
+        return cache[joltages]
+
+    elif is_out_of_bounds(joltages):
+        pass
+
+    elif array_zero(joltages):
+        minResult = 0
+    
+    elif array_even(joltages) and not evenPass:
+        newJoltages = array_div(joltages,2)
+        # pd(f"divided joltage: {newJoltages}")
+        nextResult = get_joltages(newJoltages,availableButtons,cache)
+        if nextResult != None:
+            minResult = 2 * nextResult
+        else:
+            minResult = get_joltages(joltages,availableButtons,cache,True)
+    
+    else:
+        thisDesired = get_desired_output_pattern(joltages)
+        # pd(f"desired: {thisDesired:08b} - {thisDesired}")
+        
+        thisButtonCombos = find_all_button_combos(thisDesired,availableButtons)
+        # pd(f"button combo count: {len(thisButtonCombos)}")
+
+        for b in range(len(thisButtonCombos)):
+            thisButtons = thisButtonCombos[b]
+            # pd(f"thisButtons: {thisButtons}")
+
+            newJoltages = joltage_sub(joltages,thisButtons)
+            # pd(f"newJoltage: {newJoltages}")
+
+            thisResult = len(thisButtons) 
+            # pd(f"thisResult: {thisResult}")
+
+            nextResult = get_joltages(newJoltages,availableButtons,cache)
+            if nextResult != None:
+                thisResult += nextResult
+            else:
+                continue
+
+            if minResult == None or thisResult < minResult:
+                minResult = thisResult
+                minButtons = [availableButtons.index(x) for x in thisButtons]
+
+    cache[joltages] = minResult
+    pd(f"get_joltages: {joltages}")
+    pd(f"minResult: {minResult}, minButtons: {minButtons}\n")
+    return minResult
+
+###
+# Using this to compare where I'm off.
+# 
+def powerset(s): 
+    for r in range(len(s)+1): yield from itertools.combinations(s,r)
+
+
+def solve(line):
+    lights, *buttons, demands = [g[1:-1] for g in line.split()]
+
+    lights  = tuple(l=='#' for l in lights)
+    buttons = tuple(set(eval(b+',')) for b in buttons)
+    demands = tuple(eval(demands))
+
+    options, output = collections.defaultdict(list), dict()
+    for pressed in powerset(range(len(buttons))):
+        supply = [len([1 for b in pressed if j in buttons[b]])
+                         for j in range(len(demands))]
+        parity = tuple(j%2 for j in supply)
+
+        options[parity] += [pressed]
+        output[pressed] = supply
+
+
+    @functools.cache
+    def opt(demands):
+        if min(demands)  < 0: return 1e99
+        if sum(demands) == 0: return 0
+
+        answer = 1e99
+        parity = tuple(j%2 for j in demands)
+
+        minPressed = None
+        for pressed in options[parity]:
+            remain = tuple((j-s)//2 for j,s in zip(demands, output[pressed]))
+            thisAnswer = len(pressed) + 2*opt(remain)
+            if thisAnswer < answer:
+                answer = min(answer, thisAnswer)
+                minPressed = copy.deepcopy(pressed)
+
+        pd(f"answer: {answer}, minPressed: {minPressed}")
+
+        return answer
+
+    return min(map(len, options[lights])), opt(demands)
+###
+
+debug = True
+
+sourceInput = getInput()
+
+# data = arrayFromGridOfDigits(sourceInput)
+# p(data)
+
+data = parseInput(sourceInput[74:75])
+# pd(data)
+
+pd("start",timePrefix=True)
+answer = 0
+for m in range(len(data)):
+    pd("-")
+    thisMachine = data[m]
+    pd(f"{thisMachine[origKey]}")
+    thisAnswer = 0
+    # cache = new_cache()
+    # # prime the cache
+    # for i in range(len(thisMachine[buttonKey])):
+    #         b = thisMachine[buttonKey][i]
+    #         temp = get_joltage(b,thisMachine[buttonKey][i:i+1],cache)
+    # thisAnswer = get_joltage(thisMachine[joltageKey],thisMachine[buttonKey],cache)
+    # pd(thisAnswer,timePrefix=True)
+
+    # pd(f"{thisMachine[joltageKey]}")
+    # desired = get_desired_output_pattern(thisMachine[joltageKey])
+    # pd(f"{desired:08b} - {desired}")
+    # buttons = find_shortest_button_combo(desired,thisMachine[buttonKey])
+    # pd(f"{buttons}")
+    # newJoltage = joltage_sub(thisMachine[joltageKey],buttons)
+    # pd(f"{newJoltage}")
+
+    thisCache = new_cache()
+    thisAnswer = get_joltages(thisMachine[joltageKey],thisMachine[buttonKey],thisCache)
+    thisSolve = solve(thisMachine[origKey])
+    p(f"line: {m}, thisAnswer: {thisAnswer}, thisSolve: {thisSolve}", timePrefix=True)
+    if thisAnswer != thisSolve[1]:
+        print(f"****ERROR****")
+
+    if thisAnswer:
+        answer += thisAnswer
+    else:
+        p("ERROR")
+
+
+p(answer)
